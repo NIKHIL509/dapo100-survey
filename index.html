@@ -132,7 +132,12 @@ function jsonpGet(params) {
   const cb = 'dapoCb' + (_jsonpN++) + '_' + Date.now();
   const script = document.createElement('script');
   let done = false;
-  const cleanup = () => { try { delete window[cb] } catch (e) { window[cb] = undefined } if (script.parentNode) script.remove(); clearTimeout(timer) };
+  // On cleanup, replace the callback with a harmless no-op rather than deleting
+  // it outright - if the response somehow still arrives after we've already
+  // timed out or moved on, it calls a function that does nothing instead of
+  // throwing "undefined is not a function" inside a cross-origin script tag
+  // (which the browser would then report as an opaque, undebuggable error).
+  const cleanup = () => { window[cb] = () => {}; if (script.parentNode) script.remove(); clearTimeout(timer) };
   window[cb] = (result) => { if (done) return; done = true; cleanup(); resolve(result) };
   const qs = new URLSearchParams(Object.assign({}, params, { callback: cb })).toString();
   script.src = WEBAPP_URL + '?' + qs;
@@ -654,6 +659,33 @@ function blockedView(k){
  const who=whoHas(k),names=who.length?who.map(t=>t.team+' - lead: '+t.lead).join('<br>'):'no team assigned yet';
  return `<div class="block"><h2>[Blocked] ${SH[k].t}</h2><p>Your team (<b>${esc(ME.team)}</b>) doesn't have access to enter data on this sheet.</p><p class="hint">Assigned team(s):<br>${names}</p><p class="hint">Ask an admin to add your team if this is wrong.</p></div>`}
 function letterForClient(n){let s='';n++;while(n>0){const rem=(n-1)%26;s=String.fromCharCode(65+rem)+s;n=Math.floor((n-1)/26)}return s}
+// A point's "family" is the top-level (no-parent) road its segment traces back
+// to through the chain of "Branch of" links. Letters reset to A at the start
+// of each family and continue through all its branches, so a point's stored
+// label is always <family root Seg ID>-<letter> - globally unique (no two
+// families can ever collide on the same letter) while still giving every
+// family its own clean A, B, C, D... sequence, matching how branch Segment
+// IDs and intersection labels already work in this app.
+function familyRootId(segId){
+ let cur=D.road.find(x=>x.id===segId),seen=new Set();
+ while(cur&&cur.parent&&!seen.has(cur.id)){seen.add(cur.id);const next=D.road.find(x=>x.id===cur.parent);if(!next)break;cur=next}
+ return cur?cur.id:segId;
+}
+function nextFamilyLetters(rootId,count){
+ const prefix=rootId+'-';
+ const used=D.points.filter(p=>p.label&&p.label.indexOf(prefix)===0).map(p=>p.label.slice(prefix.length));
+ let n=0;
+ while(used.includes(letterForClient(n)))n++;
+ const out=[];
+ for(let i=0;i<count;i++){while(used.includes(letterForClient(n))||out.includes(letterForClient(n)))n++;out.push(letterForClient(n));n++}
+ return out;
+}
+async function relabelPoint(point,newLabel){
+ const old=point.label;
+ point.label=newLabel;
+ if(!await put('points',point)){point.label=old;return false}
+ return true;
+}
 function captureGpsInto(latId,lngId){
  if(!navigator.geolocation){toast('GPS not available in this browser');return}
  toast('Getting location...');
@@ -696,10 +728,10 @@ async function resolvePoint(prefix){
   if(lat===''||lng===''){toast('Enter or capture latitude/longitude, or pick an existing point');return{ok:false}}
   const r=await gs('createPoint',+lat,+lng,note,ME.username);
   if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else{toast('Could not tag this point')}return{ok:false}}
-  D.points.push({label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),_id:r.id});
-  return{ok:true,label:r.label};
+  D.points.push({label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id});
+  return{ok:true,label:r.label,isNew:true,_id:r.id};
  }
- return{ok:true,label:sel};
+ return{ok:true,label:sel,isNew:false};
 }
 async function computeLen(kmm,manualLen,aLabel,bLabel){
  if((kmm||'GPS (points)')==='GPS (points)'&&aLabel&&bLabel){
@@ -730,9 +762,14 @@ async function addIntersectionPoint(btn){
   const p={label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id};
   D.points.push(p);
   SESSION_INT.push({label:r.label,note:r.note,_id:r.id});
-  if(LAST_SEGMENT&&D.road.some(x=>x.id===LAST_SEGMENT)){p.parent=LAST_SEGMENT;await put('points',p)}
+  if(LAST_SEGMENT&&D.road.some(x=>x.id===LAST_SEGMENT)){
+   p.parent=LAST_SEGMENT;
+   const root=familyRootId(LAST_SEGMENT);
+   const[newLabel]=nextFamilyLetters(root,1);
+   await relabelPoint(p,root+'-'+newLabel);
+  }
   render();
-  toast('Tagged '+r.label+(r.note?': '+r.note:'')+(p.parent?' - linked to '+p.parent:''));
+  toast('Tagged '+p.label+(r.note?': '+r.note:'')+(p.parent?' - linked to '+p.parent:''));
  });
 }
 function growList(baseline,getter){
@@ -787,6 +824,7 @@ async function saveRoadSegment(btn){
   const id=D.road[edit].id;
   const rowOut={id,a:ra.label,b:rb.label,parent,zone,road,kmm,so:'',eo:'',len,w,me:'',rt,sf,va,ph:'',ct,_id:D.road[edit]._id};
   if(!await put('road',rowOut))return;
+  await relabelNewEndpoints_(id,ra,rb,rowOut);
   edit=-1;render();toast('Road segment updated');
   return;
  }
@@ -801,13 +839,41 @@ async function saveRoadSegment(btn){
  const row={};cols.forEach((c,i)=>row[c.k]=values[i]);row.id=id;row._id=rowId;
  D.road.push(row);
  LAST_SEGMENT=id;
+ await relabelNewEndpoints_(id,ra,rb,row);
  for(const si of SESSION_INT){
   const p=D.points.find(x=>x._id===si._id);
-  if(p&&!p.parent){p.parent=id;await put('points',p)}
+  if(p&&!p.parent){
+   p.parent=id;
+   const root=familyRootId(id);
+   const[newLabel]=nextFamilyLetters(root,1);
+   await relabelPoint(p,root+'-'+newLabel);
+  }
  }
  render();
  toast('Road saved as '+id+(rb.label?'':' - Point B still pending, edit this row once you reach it'));
  });
+}
+// After a segment has its final ID, give any newly-created endpoint (Point A
+// and/or B) a proper family-scoped label instead of the temporary one it got
+// at the moment it was tagged, and keep the segment's own a/b fields in sync.
+async function relabelNewEndpoints_(segId,ra,rb,segRow){
+ const root=familyRootId(segId);
+ const need=(ra.isNew?1:0)+(rb.isNew?1:0);
+ if(!need)return;
+ const letters=nextFamilyLetters(root,need);
+ let li=0,changed=false;
+ if(ra.isNew){
+  const p=D.points.find(x=>x._id===ra._id);
+  if(p){const newLabel=root+'-'+letters[li++];await relabelPoint(p,newLabel);segRow.a=newLabel;ra.label=newLabel;changed=true}
+ }
+ if(rb.isNew){
+  const p=D.points.find(x=>x._id===rb._id);
+  if(p){const newLabel=root+'-'+letters[li++];await relabelPoint(p,newLabel);segRow.b=newLabel;rb.label=newLabel;changed=true}
+ }
+ if(changed){
+  const seg=D.road.find(x=>x.id===segId);
+  if(seg){seg.a=segRow.a;seg.b=segRow.b;await put('road',seg)}
+ }
 }
 function continueCard(){
  if(!LAST_SEGMENT||!D.road.some(x=>x.id===LAST_SEGMENT))return '';
@@ -1100,6 +1166,21 @@ function render(){
 }
 
 /* ---------- load ---------- */
+// Checks whether the user has typed anything into a text-type field on the
+// current screen that hasn't been saved yet. Deliberately conservative: a
+// select showing a sensible default (e.g. a pre-filled Segment ID) doesn't
+// count - only things the user would actually lose if the screen rebuilt
+// itself under them, which is exactly what the background refresh must
+// never do while real unsaved work is sitting on screen.
+function hasUnsavedFormInput(){
+ const main=document.getElementById('main');
+ if(!main)return false;
+ const fields=main.querySelectorAll('input[type="text"],input[type="number"],input:not([type]),textarea');
+ for(const el of fields){
+  if(el.value&&String(el.value).trim())return true;
+ }
+ return false;
+}
 async function load(){
  if(!ME)return;
  try{
@@ -1108,7 +1189,7 @@ async function load(){
   [...KEYS,...ADMIN_KEYS].forEach((k,i)=>{const cs=SH[k].c;D[k]=(R[i]||[]).map((row,ri)=>{const o={};cs.forEach((c,ci)=>o[c.k]=row[ci]??'');o._id=row[cs.length];o._t=ri;return o})});
   D._loaded=true;
  }catch(e){toast('Sync error: '+(e.message||e))}
- if(!document.activeElement||!document.activeElement.closest('#main'))render();
+ if((!document.activeElement||!document.activeElement.closest('#main'))&&!hasUnsavedFormInput())render();
 }
 
 /* ---------- boot ---------- */
