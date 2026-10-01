@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>VPS - DAPO 100 Survey</title>
+<style>
+:root{--bg:#f6f7f5;--card:#fff;--ink:#1c2420;--mut:#66726b;--line:#dde2de;--acc:#0f4c81;--acc2:#e6eef6;--warn:#b3541e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121513;--card:#1a1e1b;--ink:#e8ede9;--mut:#93a09a;--line:#2b322d;--acc:#6fb0ea;--acc2:#1a2633;--warn:#e88b57}}
+:root[data-theme="dark"]{--bg:#121513;--card:#1a1e1b;--ink:#e8ede9;--mut:#93a09a;--line:#2b322d;--acc:#6fb0ea;--acc2:#1a2633;--warn:#e88b57}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0b3558;color:#fff}header img{width:56px;height:56px;border-radius:50%;background:#fff;flex:none}h1{font-size:17px;margin:0;line-height:1.2}header p{margin:2px 0 0;color:#b9cfe4;font-size:12px}
+#me{margin-left:auto;text-align:right;font-size:12px;color:#cfe0f0}#me button{margin-top:4px;background:transparent;border:1px solid #7fa9cc;color:#fff;padding:4px 10px;border-radius:8px;font-size:12px}
+footer{padding:14px;text-align:center;color:var(--mut);font-size:12px;border-top:1px solid var(--line);margin-top:10px}footer b{color:var(--ink)}
+nav{display:flex;gap:6px;overflow-x:auto;padding:8px 14px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+nav button{white-space:nowrap;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:99px;font-size:13px}
+nav button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+main{padding:6px 14px 40px;max-width:1100px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.card h2{font-size:14px;margin:0 0 4px}.hint{color:var(--mut);font-size:12px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.grid label{display:flex;flex-direction:column;font-size:11px;color:var(--mut);gap:2px}
+.wide{grid-column:1/-1}
+input,select,textarea{font:inherit;font-size:14px;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%}
+input[readonly]{background:var(--acc2);font-weight:600}
+.btn{background:var(--acc);color:#fff;border:0;padding:9px 14px;border-radius:8px;font-size:14px;font-weight:600}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:-1px;margin-right:5px}
+.btn.g .spin{border-color:rgba(15,76,129,.35);border-top-color:var(--acc)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn:disabled,a.x:disabled{opacity:.65;pointer-events:none}
+.btn.g{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:12px}
+th{background:#2f3833;color:#fff;text-align:left;padding:6px;white-space:nowrap;position:sticky;top:0}td{padding:5px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}.kpi b{font-size:22px;display:block}.kpi span{font-size:11px;color:var(--mut)}
+.bar{display:flex;align-items:center;gap:8px;font-size:12px;margin:3px 0}.bar i{display:block;height:10px;background:var(--acc);border-radius:5px}.bar em{min-width:90px;font-style:normal;color:var(--mut)}
+.warn{color:var(--warn);font-size:13px;margin:3px 0}.ok{color:var(--acc);font-size:13px}
+.block{background:var(--acc2);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center}
+.block h2{margin-top:0}
+#msg{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;display:none;z-index:9}
+a.x{color:var(--acc);cursor:pointer;margin-right:8px}
+#login{max-width:340px;margin:60px auto;padding:20px}
+#login input{margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--acc2);border-radius:99px;padding:3px 9px;margin:2px 4px 2px 0;font-size:12px}
+</style></head><body>
+<div id="err" style="display:none;background:#fee;color:#900;padding:14px;font:13px/1.5 monospace;white-space:pre-wrap;border-bottom:3px solid #900"></div>
+<script>
+window.onerror=function(msg,src,line,col,e){var d=document.getElementById('err');d.style.display='block';d.textContent='APP ERROR - copy this and send it back:\n'+msg+'\n(line '+line+', col '+col+')\n'+(e&&e.stack?e.stack:'');return false};
+window.addEventListener('unhandledrejection',function(e){var d=document.getElementById('err');d.style.display='block';d.textContent='APP ERROR (async) - copy this and send it back:\n'+(e.reason&&e.reason.stack?e.reason.stack:e.reason)});
+</script>
+<div id="loginWrap"><div id="login" class="card">
+ <h2 style="text-align:center">Vivekananda Public School</h2>
+ <p class="hint" style="text-align:center">DAPO 100 Survey - sign in</p>
+ <input id="lu" placeholder="Username" autocapitalize="off">
+ <input id="lp" type="password" placeholder="PIN">
+ <button class="btn" style="width:100%" onclick="doLogin(this)">Log in</button>
+ <p id="lerr" class="warn" style="display:none;text-align:center"></p>
+</div></div>
+<div id="app" style="display:none">
+<header><img id="logoimg" alt="Vivekananda Public School logo" src="data:image/jpeg;base64,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"><div><h1>Vivekananda Public School, Daporijo</h1><p>DAPO 100 - Road, Drainage &amp; Service-Unit Mapping</p><p>Himalayan Fringes Project | Daporijo Clean Town Mission</p></div>
+<div id="me"></div></header>
+<div id="st" style="padding:0 14px;font-size:12px;color:var(--mut)"></div><nav id="nav"></nav><main id="main"></main>
+<footer><b>Vivekananda Public School</b> - Touch the Future - Estd 2004<br>Daporijo, Upper Subansiri District, Arunachal Pradesh<br>CBSE Affiliation No. 2230086 - School Code 35085 - LKG to Class 10<br>Prototype survey tool</footer>
+</div>
+<div id="msg"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const YN=['Yes','No'];
+const C=(k,l,t='t',o)=>({k,l,t,o});
+const PREM=['Houses','Shops','Rest./ Dhaba','Hotel/ Homestay','Commercial Complex','Units in Complex','School/ College','Hospital/ Clinic','Govt Office','Religious/ Community','Market','Garage/ Workshop','Other'];
+const TALLY=['Households','Standalone Shops','Restaurant/Dhaba','Commercial Complex','Institutions','GVP / Dump Point'];
+const SH={
+points:{n:'Points',t:'GPS Points',h:'Every point on the ground gets one entry here, in the order you tag it. The very first two points ever tagged become A and B - everything after that (branch junctions, other roads) takes the next free letter.',perm:'fs1',c:[
+ C('label','Label','auto'),C('lat','Latitude','n'),C('lng','Longitude','n'),C('note','Note / landmark'),C('created_by','Tagged by','auto'),C('ts','Tagged at','auto'),C('parent','Found along Seg ID','segsel')]},
+road:{n:'FS1 Road Segments',t:'FS1 - Road Segment Measurement',perm:'fs1',h:'Segment ID is generated for you. Pick the two points (tag them on the Points tab first if needed). Choose GPS to use the distance between the points, or Odometer/Manual for the length.',c:[
+ C('id','Seg ID','gen'),C('a','Point A','ptsel'),C('b','Point B','ptsel'),C('parent','Branch of (parent Seg ID)','segsel'),
+ C('zone','Zone/ Colony'),C('road','Road'),C('kmm','Km Method','s',['GPS (points)','Odometer','Manual']),
+ C('so','Start Odo km','n'),C('eo','End Odo km','n'),C('len','Length km','n'),C('w','Width m','n'),C('me','M/E','s',['M','E']),
+ C('rt','Road Type','s',['Main','Secondary','Lane','Internal']),C('sf','Surface','s',['Paved','Unpaved','Mixed']),
+ C('va','Vehicle Access','c',['Small pickup','Large truck','Two-wheeler only','Handcart only','None']),C('ph','Photo'),C('ct','Connects to / Leads to')]},
+prem:{n:'FS2 Service Units',t:'FS2 - Service-Unit Count',perm:'fs2',h:'Both sides of the segment. A complex counts as 1; its internal units go under "Units in Complex" only.',
+ c:[C('id','Seg ID','segsel'),...PREM.map((p,i)=>i===5?C('p'+i,p):C('p'+i,p,'n')),C('tot','Total','auto')]},
+drain:{n:'FS3 Drain Gutter',t:'FS3 - Drain / Gutter Mapping',perm:'fs3',h:'Left/Right always based on travelling Point A -> Point B. The suggested length comes from the GPS distance between the segment\'s two points - measure the actual drain length yourself if it only covers part of the segment.',c:[
+ C('id','Seg ID','segsel'),
+ C('ld','Left Drain?','s',YN),C('lt','Left Type','s',['Open','Covered','Natural','None']),C('ll','Left Len m','n'),C('lw','Left Width m','n'),C('lc','Left Condition','s',['Good','Fair','Poor']),C('lb','Left Blocked/Waste?','s',YN),C('lo','Left Outfall/Destination'),
+ C('rd','Right Drain?','s',YN),C('rt','Right Type','s',['Open','Covered','Natural','None']),C('rl','Right Len m','n'),C('rw','Right Width m','n'),C('rc','Right Condition','s',['Good','Fair','Poor']),C('rb','Right Blocked/Waste?','s',YN),C('ro','Right Outfall/Destination'),
+ C('ph','Photo'),C('rm','Remarks')]},
+coll:{n:'FS4 Access Hotspots',t:'FS4 - Collection Access & Waste Hotspots',perm:'fs4',h:'Link everything to the same Segment ID. GVP and Burning Point counts come automatically from FS5 walking-order sequence - survey FS5 for this segment first.',c:[
+ C('id','Seg ID','segsel'),C('ex','Existing Collection?','s',YN),C('fr','Frequency','c',['Daily','Alternate days','Weekly','Irregular','None']),
+ C('vh','Vehicle Used / Possible','c',['Small pickup','Large truck','Tractor','Handcart','Two-wheeler','None']),C('cp','Collection Points','n'),C('gv','GVP / Dump (from FS5)','auto'),
+ C('bp','Burning Points (from FS5)','auto'),C('dr','Drain/River Dumping?','s',YN),C('ap','Access Problem'),C('tc','Turning / Stop Constraint'),C('ph','Photo'),C('fn','Field Notes')]},
+sketch:{n:'FS5 Sketch Tally',t:'FS5 - Segment Sketch & Premises Tally',perm:'fs5',h:'Pick a Segment ID already entered in FS1 - Zone, Road and Points fill in on their own. Add each building below in the order you walk from Point A to Point B; the tallies and the sketch build themselves.',c:[
+ C('id','Segment ID','segsel'),C('zone','Zone/Colony','auto'),C('road','Road','auto'),C('a','Point A','auto'),C('b','Point B','auto'),C('team','Team'),
+ ...TALLY.flatMap((t,i)=>[C('l'+i,t+' LEFT','auto'),C('r'+i,t+' RIGHT','auto'),C('t'+i,t+' TOTAL','auto')]),
+ C('sk','Road Sketch (text)','x'),C('nt','Notes','x'),C('seql','Sequence Left (json)','hid'),C('seqr','Sequence Right (json)','hid')]},
+daily:{n:'FS6 Daily Control',t:'FS6 - Daily Team & Route Control',perm:'admin',h:'Supervisor check to prevent duplicate or missed segments.',c:[
+ C('dt','Date','d'),C('tm','Team'),C('zn','Zone'),C('ss','Start Seg.'),C('es','End Seg.'),C('ns','No. Segments','n'),C('km','Approx km','n'),
+ C('su','Sheets Used'),C('ck','Checked?','s',YN),C('rv','Revisit?'),C('sn','Supervisor Notes')]},
+ptypes:{n:'Premise Types',t:'Premise Types',perm:'fs5',h:'Shared list of custom premise types and their sketch symbol - visible to every team, town-wide. Add new ones from FS5 while building a sketch.',c:[
+ C('name','Type name'),C('symbol','Sketch symbol')]},
+users:{n:'Users',t:'Users',perm:'admin',h:'Create one login per person. PIN can be any short number - this blocks accidental edits, it is not bank-grade security.',c:[
+ C('username','Username'),C('pin','PIN'),C('name','Full name'),C('team','Team'),C('admin','Admin?','s',YN)]},
+teams:{n:'Teams',t:'Teams',perm:'admin',h:'Tick which field sheets each team may enter data into.',c:[
+ C('team','Team name'),C('lead_username','Lead username'),C('fs1','FS1 Road','s',YN),C('fs2','FS2 Units','s',YN),C('fs3','FS3 Drain','s',YN),C('fs4','FS4 Access','s',YN),C('fs5','FS5 Sketch','s',YN)]}
+};
+const KEYS=['points','road','prem','drain','coll','sketch','daily','ptypes'];
+const ADMIN_KEYS=['users','teams'];
+let D={};[...KEYS,...ADMIN_KEYS].forEach(k=>D[k]=[]);
+let tab='home',edit=-1;let SEQ={l:[],r:[]};let lastBt='Households';let SESSION_INT=[];let LOGGING_IN=false;let LAST_SEGMENT='';
+let ME=null; // {username,name,team,admin,perms,teams}
+const $=s=>document.querySelector(s),num=v=>{const x=parseFloat(v);return isNaN(x)?0:x};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&lt;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c));
+function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',2600)}
+async function withSpinner(btn,label,fn){
+ if(!btn)return fn();
+ const orig=btn.innerHTML,wasDisabled=btn.disabled;
+ btn.disabled=true;
+ btn.innerHTML=`<span class="spin"></span>${esc(label)}`;
+ try{
+  return await fn();
+ } finally {
+  btn.disabled=wasDisabled;
+  btn.innerHTML=orig;
+ }
+}
+// ---------- backend communication: GitHub Pages-hosted frontend, Apps Script backend ----------
+// Fill this in with your deployed Apps Script Web App URL (ends in /exec) after
+// Deploy > Manage deployments. The app will not work until this is set correctly.
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwWuL5xA3e8QiktGqldTI9j4-TDsHguH_lyTMFahW2IW6uWFZE00YZ5UGZdPPNVEisNtA/exec';
+
+let _jsonpN = 0;
+function jsonpGet(params) {
+ return new Promise((resolve, reject) => {
+  const cb = 'dapoCb' + (_jsonpN++) + '_' + Date.now();
+  const script = document.createElement('script');
+  let done = false;
+  const cleanup = () => { try { delete window[cb] } catch (e) { window[cb] = undefined } if (script.parentNode) script.remove(); clearTimeout(timer) };
+  window[cb] = (result) => { if (done) return; done = true; cleanup(); resolve(result) };
+  const qs = new URLSearchParams(Object.assign({}, params, { callback: cb })).toString();
+  script.src = WEBAPP_URL + '?' + qs;
+  script.onerror = () => { if (done) return; done = true; cleanup(); reject(new Error('Could not reach the server - check your connection')) };
+  const timer = setTimeout(() => { if (done) return; done = true; cleanup(); reject(new Error('Server took too long to respond')) }, 20000);
+  document.body.appendChild(script);
+ });
+}
+// Actions with small, bounded inputs get a single direct round trip.
+// Everything else (saves with potentially large payloads - FS5's sequence JSON,
+// full segment rows) is sent as a POST the client doesn't try to read directly
+// (Apps Script's cross-origin response handling for POST is unreliable), then
+// retrieved by polling the same JSONP GET path with the request's ID - this is
+// the same pattern already proven working in the WasteWise Daporijo project.
+const DIRECT_GET_ACTIONS = new Set(['login', 'getAll', 'deleteRow', 'segmentGpsLengthKm']);
+async function gs(fn, ...args) {
+ if (DIRECT_GET_ACTIONS.has(fn)) {
+  return jsonpGet({ action: fn, args: JSON.stringify(args) });
+ }
+ const requestId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+ await fetch(WEBAPP_URL, {
+  method: 'POST',
+  headers: { 'Content-Type': 'text/plain' }, // avoids a CORS preflight Apps Script handles poorly
+  body: JSON.stringify({ action: fn, args, requestId })
+ }).catch(() => {}); // can't read the response cross-origin; polling is how we find out what happened
+ const delays = [150, 150, 250, 250, 400, 500]; // fast first checks, settles to 500ms
+ for (let i = 0; i < 40; i++) {
+  await new Promise(r => setTimeout(r, delays[Math.min(i, delays.length - 1)]));
+  const result = await jsonpGet({ action: 'pollResult', requestId });
+  if (result !== null) return result;
+ }
+ throw new Error('Save timed out - check your connection and try again');
+}
+
+/* ---------- login ---------- */
+let POLL_TIMER=null;
+async function doLogin(btn){
+ if(LOGGING_IN)return;
+ LOGGING_IN=true;
+ const u=$('#lu').value.trim(),p=$('#lp').value.trim();
+ if(!u||!p){$('#lerr').textContent='Enter a username and PIN';$('#lerr').style.display='block';LOGGING_IN=false;return}
+ await withSpinner(btn,'Logging in...',async()=>{
+  try{
+   const r=await gs('login',u,p);
+   if(!r||!r.ok){$('#lerr').textContent=(r&&r.msg)||'Login failed';$('#lerr').style.display='block';LOGGING_IN=false;return}
+   ME=r;
+   try{localStorage.setItem('dapo_login',JSON.stringify({u,p}))}catch(e){}
+   enterApp();
+  }catch(e){$('#lerr').textContent='Could not reach the server: '+(e.message||e);$('#lerr').style.display='block'}
+ });
+ LOGGING_IN=false;
+}
+function logout(){if(POLL_TIMER){clearInterval(POLL_TIMER);POLL_TIMER=null}ME=null;try{localStorage.removeItem('dapo_login')}catch(e){}$('#app').style.display='none';$('#loginWrap').style.display='block';$('#lu').value='';$('#lp').value=''}
+function enterApp(){
+ $('#loginWrap').style.display='none';$('#app').style.display='block';
+ $('#me').innerHTML=`${esc(ME.name)} - ${esc(ME.team)}${ME.admin?' (admin)':''}<br><button onclick="logout()">Log out</button>`;
+ tab='home';edit=-1;render();load();
+ if(POLL_TIMER)clearInterval(POLL_TIMER);
+ POLL_TIMER=setInterval(load,20000);
+}
+
+/* ---------- permissions ---------- */
+function canEdit(sheetKey){if(!ME)return false;if(ME.admin)return true;const perm=SH[sheetKey]&&SH[sheetKey].perm;if(perm==='admin')return !!ME.admin;return !!ME.perms[perm]}
+function whoHas(sheetKey){
+ const perm=SH[sheetKey]&&SH[sheetKey].perm;if(!ME||!ME.teams)return[];
+ if(perm==='admin')return ME.teams.filter(t=>t.team==='ADMIN');
+ return ME.teams.filter(t=>t[perm]);
+}
+
+/* ---------- autos ---------- */
+function autos(k,r){
+ if(k==='prem'){r.tot=PREM.reduce((s,_,i)=>(i===4||i===5)?s:s+num(r['p'+i]),0)}
+ if(k==='sketch'){recalcSketch(r)}
+ if(k==='coll'){
+  const sk=D.sketch.find(x=>x.id===r.id);
+  let items=[];
+  if(sk){try{items=[...JSON.parse(sk.seql||'[]'),...JSON.parse(sk.seqr||'[]')]}catch(e){}}
+  r.gv=items.filter(it=>it.t==='GVP / Dump Point').length;
+  r.bp=items.filter(it=>/burning/i.test(it.t||'')).length;
+ }
+ return r}
+function recalcSketch(r){
+ const rd=D.road.find(x=>x.id===r.id);
+ r.zone=rd?rd.zone||'':'';r.road=rd?rd.road||'':'';r.a=rd?rd.a||'':'';r.b=rd?rd.b||'':'';
+ TALLY.forEach((label,i)=>{r['l'+i]=SEQ.l.filter(it=>it.t===label).length;r['r'+i]=SEQ.r.filter(it=>it.t===label).length;r['t'+i]=r['l'+i]+r['r'+i]});
+ r.seql=JSON.stringify(SEQ.l);r.seqr=JSON.stringify(SEQ.r);
+ return r}
+
+/* ---------- inputs ---------- */
+function ptLabel(lbl){const p=D.points.find(x=>x.label===lbl);return p?lbl+(p.note?' - '+p.note:''):lbl}
+function input(c,v){
+ const id='f_'+c.k,val=esc(v??'');
+ if(c.t==='auto')return `<input id="${id}" readonly placeholder="auto">`;
+ if(c.t==='gen')return `<input id="${id}" readonly value="${val}" placeholder="generating...">`;
+ if(c.t==='hid')return '';
+ if(c.t==='ptsel'){
+  const opts=D.points.map(p=>`<option value="${esc(p.label)}" ${p.label===v?'selected':''}>${esc(ptLabel(p.label))}</option>`).join('');
+  return `<select id="${id}"><option value="">Select point...</option>${opts}</select>`;
+ }
+ if(c.t==='segsel'){
+  const dflt=(v==null||v==='')&&D.road.some(x=>x.id===LAST_SEGMENT)?LAST_SEGMENT:v;
+  const opts=D.road.map(x=>`<option value="${esc(x.id)}" ${x.id===dflt?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''} (${esc(x.a||'?')}->${esc(x.b||'?')})</option>`).join('');
+  const onch=c.k==='id'&&c.l==='Segment ID'?' onchange="seqReset()"':'';
+  return `<select id="${id}"${onch}><option value="">Select segment...</option>${opts}</select>`;
+ }
+ if(c.t==='s'){const sel=v||(edit<0&&c.k==='kmm'?'GPS (points)':'');return `<select id="${id}"><option value=""></option>${c.o.map(o=>`<option ${o===sel?'selected':''}>${o}</option>`).join('')}</select>`}
+ if(c.t==='c')return `<input id="${id}" list="dl_${c.k}" value="${val}"><datalist id="dl_${c.k}">${c.o.map(o=>`<option>${o}</option>`).join('')}</datalist>`;
+ if(c.t==='x')return `<textarea id="${id}" rows="3" style="font-family:ui-monospace,monospace">${val}</textarea>`;
+ if(c.t==='n')return `<input id="${id}" type="number" step="any" inputmode="decimal" value="${val}">`;
+ if(c.t==='d')return `<input id="${id}" type="date" value="${val||(edit<0?new Date().toISOString().slice(0,10):'')}">`;
+ return `<input id="${id}" value="${val}">`}
+function readForm(k){const r={};SH[k].c.forEach(c=>{if(c.t!=='auto'&&c.t!=='hid'){const e=$('#f_'+c.k);r[c.k]=e?e.value.trim():''}});return autos(k,r)}
+function refreshAuto(k){const r=autos(k,readForm(k));SH[k].c.forEach(c=>{if(c.t==='auto'){const e=$('#f_'+c.k);if(e)e.value=r[c.k]}})}
+function onIn(k){refreshAuto(k)}
+function onCh(k){
+ if(k==='sketch'){const idEl=$('#f_id');if(idEl){/* segsel already resets via its own onchange */}}
+ refreshAuto(k)}
+
+/* ---------- points panel (GPS capture) ---------- */
+function pointPanel(){
+ return `<div class="card"><h2>Tag a new point</h2>
+ <p class="hint">Stand at the junction/landmark, then capture GPS - or type coordinates by hand.</p>
+ <div class="grid">
+  <label>Note / landmark<input id="p_note" placeholder="e.g. Main Junction"></label>
+  <label>Latitude<input id="p_lat" type="number" step="any"></label>
+  <label>Longitude<input id="p_lng" type="number" step="any"></label>
+ </div>
+ <div class="row"><button class="btn g" onclick="captureGps()">Use my current location</button><button class="btn" onclick="addPoint(this)">Save point</button></div>
+ <p id="p_status" class="hint"></p></div>`}
+function captureGps(){
+ if(!navigator.geolocation){toast('GPS not available in this browser');return}
+ $('#p_status').textContent='Getting location...';
+ navigator.geolocation.getCurrentPosition(
+  pos=>{$('#p_lat').value=pos.coords.latitude.toFixed(6);$('#p_lng').value=pos.coords.longitude.toFixed(6);$('#p_status').textContent='Location captured (+/-'+Math.round(pos.coords.accuracy)+'m)'},
+  err=>{$('#p_status').textContent='Could not get location: '+err.message},
+  {enableHighAccuracy:true,timeout:10000});
+}
+async function addPoint(btn){
+ if(!canEdit('points')){blockedToast('points');return}
+ const lat=$('#p_lat').value,lng=$('#p_lng').value,note=$('#p_note').value.trim();
+ if(lat===''||lng===''){toast('Enter or capture latitude/longitude first');return}
+ await withSpinner(btn,'Saving...',async()=>{
+  try{
+   const r=await gs('createPoint',+lat,+lng,note,ME.username);
+   if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else toast('Could not save point');return}
+   D.points.push({label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id});
+   $('#p_note').value='';$('#p_lat').value='';$('#p_lng').value='';$('#p_status').textContent='';
+   render();toast('Point '+r.label+' saved');
+  }catch(e){toast('Error: '+(e.message||e))}
+ });
+}
+function blockedToast(sheetKey){
+ const who=whoHas(sheetKey);
+ const names=who.length?who.map(t=>t.team+' (lead: '+t.lead+')').join(', '):'no team yet';
+ toast('Blocked - your team ('+ME.team+') is not assigned to this sheet. Assigned: '+names);
+}
+
+/* ---------- segment ID + GPS length ---------- */
+/* ---------- sequence builder (FS5) ---------- */
+const SYMMAP={'Households':'H','Standalone Shops':'SHOP','Restaurant/Dhaba':'DHABA','Institutions':'SCHOOL','GVP / Dump Point':'GVP*'};
+function symbolFor(t){
+ if(SYMMAP[t])return SYMMAP[t];
+ const custom=(D.ptypes||[]).find(x=>x.name===t);
+ if(custom&&custom.symbol)return custom.symbol;
+ return String(t||'?').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)||'?';
+}
+function chip(t,u,pt){
+ if(t==='__intersection__')return '[INTERSECTION: '+(pt||'?')+']';
+ return t==='Commercial Complex'?('[COMMERCIAL COMPLEX'+(u?': '+u:'')+']'):('['+symbolFor(t)+']');
+}
+function chipsHtml(side){
+ const items=(SEQ&&SEQ[side])||[];
+ return items.map((it,i)=>{
+  let label;
+  try{label=it.t==='__intersection__'?('Intersection: '+esc(it.pt)):esc(it.t)}catch(e){label='?'}
+  return `<span class="chip">${label}${it.t==='Commercial Complex'&&it.u?': '+esc(it.u):''}<a class="x" style="margin:0;font-weight:700" onclick="removeSeq('${side}',${i})">x</a></span>`;
+ }).join('')||'<span class="hint">none added yet</span>';
+}
+let SELECTED_INT_POINT='';
+function seqPanel(){
+ const allTypes=[...TALLY,...(D.ptypes||[]).map(p=>p.name)];
+ return `<div class="card"><h2>Add premises - walking order, Point A -> Point B</h2>
+ <p class="hint">Pick what you see next and add it to the correct side, in the order you walk the road. Don't see the type you need? Choose "Add a new type" - it's saved for every team, town-wide.</p>
+ <div class="row">
+  <select id="bt" onchange="lastBt=this.value;btChange()">${allTypes.map(t=>`<option ${t===lastBt?'selected':''}>${esc(t)}</option>`).join('')}<option value="__intersection__" ${lastBt==='__intersection__'?'selected':''}>Intersection (place a tagged point)</option><option value="__newtype__" ${lastBt==='__newtype__'?'selected':''}>+ Add a new type...</option></select>
+  <span id="buwrap" style="display:none"><label style="font-size:11px;color:var(--mut);display:block">Floors / under construction (complex only)<input id="bu" placeholder="e.g. 3 floors, 1 under construction" style="width:260px"></label></span>
+  <button type="button" class="btn g" onclick="addSeq('l')">+ Add to LEFT</button>
+  <button type="button" class="btn g" onclick="addSeq('r')">+ Add to RIGHT</button>
+ </div>
+ <div id="intbox" style="display:none;margin-top:6px">
+  <input id="int_search" placeholder="Search a tagged point by letter or note..." autocomplete="off" oninput="renderIntResults()" style="width:300px">
+  <div id="int_results" style="display:none;max-width:420px;border:1px solid var(--line);border-radius:6px;margin-top:4px;max-height:220px;overflow-y:auto"></div>
+ </div>
+ <div id="newtypebox" class="row" style="display:none">
+  <input id="ptype_name" placeholder="Type name, e.g. Hospital" autocomplete="off" autocapitalize="words" spellcheck="false" oninput="ptypeNameInput()">
+  <input id="ptype_symbol" placeholder="Sketch symbol, e.g. HOSP" autocomplete="off" spellcheck="false" oninput="this.dataset.touched='1'" style="width:140px">
+  <button type="button" class="btn g" onclick="addCustomType(this)">Save type</button>
+ </div>
+ <div id="seqview"><div style="margin-top:10px"><b style="font-size:12px">LEFT:</b><br>${chipsHtml('l')}</div><div style="margin-top:10px"><b style="font-size:12px">RIGHT:</b><br>${chipsHtml('r')}</div></div></div>`}
+function renderSeqUI(){const el=$('#seqview');if(!el)return;el.innerHTML=`<div style="margin-top:10px"><b style="font-size:12px">LEFT:</b><br>${chipsHtml('l')}</div><div style="margin-top:10px"><b style="font-size:12px">RIGHT:</b><br>${chipsHtml('r')}</div>`}
+function renderIntResults(){
+ const q=($('#int_search')||{}).value||'';
+ const el=$('#int_results');if(!el)return;
+ const segId=$('#f_id')?$('#f_id').value:'';
+ const ql=q.trim().toLowerCase();
+ let pts=D.points.slice().sort((a,b)=>{
+  const aMine=a.parent===segId?0:1,bMine=b.parent===segId?0:1;
+  if(aMine!==bMine)return aMine-bMine;
+  return a.label.localeCompare(b.label);
+ });
+ if(ql)pts=pts.filter(p=>p.label.toLowerCase().includes(ql)||(p.note||'').toLowerCase().includes(ql));
+ pts=pts.slice(0,8);
+ el.style.display=pts.length?'':'none';
+ el.innerHTML=pts.map(p=>`<div onclick="pickIntPoint('${esc(p.label)}')" style="cursor:pointer;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px">${esc(p.label)}${p.note?' - '+esc(p.note):''}${p.parent===segId?' (this road)':p.parent?' (from '+esc(p.parent)+')':' (not yet linked to a road)'}</div>`).join('');
+}
+function pickIntPoint(label){
+ SELECTED_INT_POINT=label;
+ const se=$('#int_search');if(se)se.value=label+' selected - tap Add to LEFT/RIGHT';
+ const res=$('#int_results');if(res)res.style.display='none';
+}
+function btChange(){
+ const t=$('#bt'),uw=$('#buwrap'),nb=$('#newtypebox'),ib=$('#intbox');if(!t)return;
+ if(uw)uw.style.display=t.value==='Commercial Complex'?'':'none';
+ if(nb){
+  nb.style.display=t.value==='__newtype__'?'':'none';
+  if(t.value==='__newtype__'){const nm=$('#ptype_name');if(nm){nm.value='';nm.focus()}const sy=$('#ptype_symbol');if(sy){sy.value='';delete sy.dataset.touched}}
+ }
+ if(ib){
+  ib.style.display=t.value==='__intersection__'?'':'none';
+  if(t.value==='__intersection__'){SELECTED_INT_POINT='';const se=$('#int_search');if(se){se.value='';se.focus()}const res=$('#int_results');if(res)res.style.display='none'}
+ }
+}
+function ptypeNameInput(){
+ const nm=$('#ptype_name'),sy=$('#ptype_symbol');if(!nm||!sy)return;
+ if(!sy.dataset.touched){sy.value=nm.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)}
+}
+async function addCustomType(btn){
+ if(!canEdit('sketch')){blockedToast('sketch');return}
+ const name=$('#ptype_name').value.trim(),symbol=$('#ptype_symbol').value.trim().toUpperCase();
+ if(!name||!symbol){toast('Enter both a type name and a symbol');return}
+ const exists=[...TALLY,...(D.ptypes||[]).map(p=>p.name)].some(t=>t.toLowerCase()===name.toLowerCase());
+ if(exists){toast('That type already exists - pick it from the list instead');return}
+ const row={name,symbol};
+ await withSpinner(btn,'Saving...',async()=>{
+  if(!await put('ptypes',row))return;
+  $('#ptype_name').value='';$('#ptype_symbol').value='';if($('#ptype_symbol'))delete $('#ptype_symbol').dataset.touched;
+  renderSeqTypeSelect();
+  toast(name+' added - pick it from the list to use it');
+ });
+}
+function renderSeqTypeSelect(){
+ const sel=$('#bt');if(!sel)return;
+ const cur=sel.value;
+ const pt=D.ptypes||[];
+ const allTypes=[...TALLY,...pt.map(p=>p.name)];
+ sel.innerHTML=allTypes.map(t=>`<option>${esc(t)}</option>`).join('')+'<option value="__newtype__">+ Add a new type...</option>';
+ sel.value=allTypes.includes(cur)?cur:(pt.length?pt[pt.length-1].name:allTypes[0]);
+ lastBt=sel.value;
+ btChange();
+}
+function addSeq(side){
+ const tEl=$('#bt');if(!tEl){toast('Type selector not found');return}
+ const t=tEl.value;
+ if(t==='__newtype__'){toast('Save the new type first, then pick it from the list');return}
+ if(t==='__intersection__'){
+  if(!SELECTED_INT_POINT){toast('Search and pick a point first');return}
+  SEQ[side].push({t:'__intersection__',pt:SELECTED_INT_POINT});
+  const placed=SELECTED_INT_POINT;
+  SELECTED_INT_POINT='';
+  const se=$('#int_search');if(se)se.value='';
+  renderSeqUI();refreshAuto('sketch');
+  toast((side==='l'?'Added to LEFT: ':'Added to RIGHT: ')+'Intersection '+placed);
+  return;
+ }
+ const uEl=$('#bu'),u=t==='Commercial Complex'?(uEl?uEl.value.trim():''):'';
+ SEQ[side].push({t,u});
+ if(uEl)uEl.value='';
+ renderSeqUI();refreshAuto('sketch');
+ toast((side==='l'?'Added to LEFT: ':'Added to RIGHT: ')+t);
+}
+function removeSeq(side,idx){SEQ[side].splice(idx,1);renderSeqUI();refreshAuto('sketch')}
+function seqReset(){SEQ={l:[],r:[]};renderSeqUI();refreshAuto('sketch')}
+function unplacedIntersections(segId){
+ const placed=new Set([...SEQ.l,...SEQ.r].filter(it=>it.t==='__intersection__').map(it=>it.pt));
+ return D.points.filter(p=>p.parent===segId&&!placed.has(p.label));
+}
+function seqLine(side){return SEQ[side].length?SEQ[side].map(it=>chip(it.t,it.u,it.pt)).join(' '):'(none recorded)'}
+function genSketch(){
+ const r=readForm('sketch');
+ if(!r.id){toast('Select a Segment ID first');return}
+ if(r.sk&&r.sk.trim()&&!confirm('Replace the current sketch text with an auto-generated one?'))return;
+ const rd=D.road.find(x=>x.id===r.id)||{},dr=D.drain.find(x=>x.id===r.id)||{};
+ const dline=(has,type,len)=>has==='No'||!type||type==='None'?'NO DRAIN':(type.toUpperCase()+' DRAIN '+(len||'?')+' m');
+ const roadLine='--- '+(rd.road||'ROAD')+' - '+(rd.len!==undefined&&rd.len!==''?rd.len+' km':'? km')+' - '+(rd.w||'?')+' m === survey direction A to B --->';
+ const txt=`POINT A: ${(rd.a||'').toUpperCase()}
+LEFT SIDE: ${dline(dr.ld,dr.lt,dr.ll)}
+${seqLine('l')}
+${roadLine}
+RIGHT SIDE: ${dline(dr.rd,dr.rt,dr.rl)}
+${seqLine('r')}
+POINT B: ${(rd.b||'').toUpperCase()}
+
+Legend: [H] House | [SHOP] Shop | [DHABA] Restaurant/Dhaba | [SCHOOL] Institution | GVP* dump/hotspot | [COMMERCIAL COMPLEX: details] | other symbols per the Premise Types tab | sketch not to scale`;
+ const e=$('#f_sk');if(e)e.value=txt}
+
+/* ---------- illustrated road sketch ---------- */
+function starPath(cx,cy,r){
+ const pts=[];for(let i=0;i<10;i++){const ang=Math.PI/2*3+i*Math.PI/5,rad=i%2===0?r:r*0.45;pts.push((cx+Math.cos(ang)*rad).toFixed(1)+','+(cy+Math.sin(ang)*rad).toFixed(1))}
+ return 'M'+pts.join('L')+'Z';
+}
+function premiseIconSVG(type,symbol,cx,cy){
+ const s=14;
+ if(type==='Households')return `<rect x="${cx-s/2}" y="${cy-s/2}" width="${s}" height="${s}" fill="#fff" stroke="#0f4c81" stroke-width="2"/><polygon points="${cx-s/2-2},${cy-s/2} ${cx},${cy-s/2-9} ${cx+s/2+2},${cy-s/2}" fill="#0f4c81"/>`;
+ if(type==='Standalone Shops')return `<circle cx="${cx}" cy="${cy}" r="${s/2+1}" fill="#fff" stroke="#4c8fc0" stroke-width="2"/>`;
+ if(type==='Restaurant/Dhaba')return `<rect x="${cx-s/2}" y="${cy-s/2}" width="${s}" height="${s}" fill="#fff" stroke="#c0824c" stroke-width="2" transform="rotate(45 ${cx} ${cy})"/>`;
+ if(type==='Commercial Complex')return `<rect x="${cx-s*0.75}" y="${cy-s*0.6}" width="${s*1.5}" height="${s*1.2}" fill="#fff" stroke="#8a4cc0" stroke-width="2"/><line x1="${cx}" y1="${cy-s*0.6}" x2="${cx}" y2="${cy+s*0.6}" stroke="#8a4cc0" stroke-width="1.2"/>`;
+ if(type==='Institutions')return `<path d="${starPath(cx,cy,s*0.62)}" fill="#fff" stroke="#c0a84c" stroke-width="2"/>`;
+ if(type==='GVP / Dump Point')return `<polygon points="${cx},${cy-s*0.6} ${cx+s*0.6},${cy+s*0.5} ${cx-s*0.6},${cy+s*0.5}" fill="#B4302A" stroke="#fff" stroke-width="1"/>`;
+ if(/burning/i.test(type||''))return `<path d="M${cx},${cy-s*0.65} C${cx+s*0.45},${cy-s*0.1} ${cx+s*0.2},${cy+s*0.1} ${cx},${cy+s*0.55} C${cx-s*0.2},${cy+s*0.1} ${cx-s*0.45},${cy-s*0.1} ${cx},${cy-s*0.65}Z" fill="#E8742A" stroke="#fff" stroke-width="1"/>`;
+ return `<circle cx="${cx}" cy="${cy}" r="${s/2+1}" fill="#fff" stroke="#93a09a" stroke-width="2"/><text x="${cx}" y="${cy+3}" text-anchor="middle" font-size="8" font-weight="700" fill="#93a09a">${esc((symbol||'?').slice(0,2))}</text>`;
+}
+function intersectionLabel(pointLabel,segId){
+ const siblings=D.points.filter(p=>p.parent===segId);
+ const idx=siblings.findIndex(p=>p.label===pointLabel);
+ return segId+'-A'+(idx+1);
+}
+function illustrationSVG(segId){
+ const seg=D.road.find(x=>x.id===segId);
+ if(!seg)return null;
+ const sk=D.sketch.find(x=>x.id===segId);
+ const dr=D.drain.find(x=>x.id===segId);
+ let seql=[],seqr=[];
+ if(sk){try{seql=JSON.parse(sk.seql||'[]');seqr=JSON.parse(sk.seqr||'[]')}catch(e){}}
+ const W=Math.max(700,Math.max(seql.length,seqr.length)*70+200),H=360,roadY=H/2,padX=70,roadX1=padX,roadX2=W-padX;
+ const drainColor=c=>c==='Good'?'#1D9E75':c==='Fair'?'#EF9F27':c==='Poor'?'#B4302A':'#B4B2A9';
+ const leftDrainY=roadY-26,rightDrainY=roadY+26;
+ const leftHas=dr&&dr.ld==='Yes'&&dr.lt&&dr.lt!=='None';
+ const rightHas=dr&&dr.rd==='Yes'&&dr.rt&&dr.rt!=='None';
+ let svg=`<rect x="0" y="0" width="${W}" height="${H}" fill="#fdfdfb"/>`;
+ svg+=`<text x="${W/2}" y="26" text-anchor="middle" font-size="16" font-weight="700" fill="#1a2420">${esc(seg.id)}${seg.road?' - '+esc(seg.road):''}</text>`;
+ svg+=`<text x="${W/2}" y="44" text-anchor="middle" font-size="11" fill="#5c6b63">${esc(seg.zone||'')}${seg.len?' | '+esc(seg.len)+' km':''}${seg.w?' | '+esc(seg.w)+' m wide':''}</text>`;
+ svg+=`<line x1="${roadX1}" y1="${roadY}" x2="${roadX2}" y2="${roadY}" stroke="#2f3833" stroke-width="8" stroke-linecap="round"/>`;
+ if(leftHas)svg+=`<line x1="${roadX1}" y1="${leftDrainY}" x2="${roadX2}" y2="${leftDrainY}" stroke="${drainColor(dr.lc)}" stroke-width="3" ${dr.lb==='Yes'?'stroke-dasharray="4 3"':''}/>`;
+ if(rightHas)svg+=`<line x1="${roadX1}" y1="${rightDrainY}" x2="${roadX2}" y2="${rightDrainY}" stroke="${drainColor(dr.rc)}" stroke-width="3" ${dr.rb==='Yes'?'stroke-dasharray="4 3"':''}/>`;
+ svg+=`<circle cx="${roadX1}" cy="${roadY}" r="7" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${roadX1}" y="${roadY+30}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f4c81">${esc(seg.a||'A')}</text>`;
+ svg+=`<circle cx="${roadX2}" cy="${roadY}" r="7" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${roadX2}" y="${roadY+30}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f4c81">${esc(seg.b||'B')}</text>`;
+ if(seg.ct)svg+=`<text x="${roadX2}" y="${roadY+44}" text-anchor="middle" font-size="9" fill="#5c6b63">-&gt; ${esc(seg.ct)}</text>`;
+ svg+=`<text x="${(roadX1+roadX2)/2}" y="${roadY-44}" text-anchor="middle" font-size="10" fill="#8a9690">walking direction: A -&gt; B</text>`;
+ function layoutRow(items,side){
+  let out='';const n=items.length;if(!n)return out;
+  items.forEach((it,i)=>{
+   const x=roadX1+(roadX2-roadX1)*((i+0.5)/n);
+   const y=side==='l'?roadY-70:roadY+70;
+   const lineY1=side==='l'?leftDrainY-2:rightDrainY+2;
+   out+=`<line x1="${x.toFixed(1)}" y1="${(y+(side==='l'?10:-10)).toFixed(1)}" x2="${x.toFixed(1)}" y2="${lineY1}" stroke="#c7cdc8" stroke-width="1"/>`;
+   if(it.t==='__intersection__'){
+    out+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7" fill="#EF9F27" stroke="#fff" stroke-width="1.5"/>`;
+    out+=`<text x="${x.toFixed(1)}" y="${(y+(side==='l'?-14:22)).toFixed(1)}" text-anchor="middle" font-size="7" font-weight="700" fill="#b06f16">${esc(intersectionLabel(it.pt,segId))}</text>`;
+    return;
+   }
+   out+=premiseIconSVG(it.t,symbolFor(it.t),x,y);
+   out+=`<text x="${x.toFixed(1)}" y="${(y+(side==='l'?-14:22)).toFixed(1)}" text-anchor="middle" font-size="7" fill="#5c6b63">${esc(symbolFor(it.t))}</text>`;
+  });
+  return out;
+ }
+ svg+=layoutRow(seql,'l');
+ svg+=layoutRow(seqr,'r');
+ const placedLabels=new Set([...seql,...seqr].filter(it=>it.t==='__intersection__').map(it=>it.pt));
+ const unplaced=D.points.filter(p=>p.parent===segId&&!placedLabels.has(p.label));
+ unplaced.forEach((p,i)=>{
+  const x=roadX1+(roadX2-roadX1)*((i+1)/(unplaced.length+1));
+  svg+=`<circle cx="${x.toFixed(1)}" cy="${roadY}" r="5" fill="#B4B2A9" stroke="#fff" stroke-width="1.5"/><text x="${x.toFixed(1)}" y="${(roadY-12).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="#8a9690">${esc(intersectionLabel(p.label,segId))}</text><text x="${x.toFixed(1)}" y="${(roadY+20).toFixed(1)}" text-anchor="middle" font-size="7" fill="#8a9690">position estimated - not placed in survey</text>`;
+ });
+ const legendItems=[['Households','Households'],['Standalone Shops','Shop'],['Restaurant/Dhaba','Dhaba'],['Commercial Complex','Complex'],['Institutions','Institution'],['GVP / Dump Point','GVP/Dump']];
+ svg+=`<text x="${padX}" y="${H-10}" font-size="9" fill="#5c6b63">Legend:</text>`;
+ legendItems.forEach(([t,label],i)=>{
+  const ix=padX+55+i*95;
+  svg+=premiseIconSVG(t,'',ix,H-14)+`<text x="${(ix+12).toFixed(1)}" y="${H-10}" font-size="8" fill="#5c6b63">${esc(label)}</text>`;
+ });
+ return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:#fdfdfb;border-radius:8px;border:1px solid var(--line)">${svg}</svg>`;
+}
+function showIllustration(){
+ const id=$('#f_id')?$('#f_id').value:'';
+ if(!id){toast('Select a Segment ID first');return}
+ const sk=D.sketch.find(x=>x.id===id);
+ if(!sk){toast('Save FS5 for this segment first - the illustration is built from the saved sequence');return}
+ const svg=illustrationSVG(id);
+ const wrap=$('#illuswrap');
+ if(wrap)wrap.innerHTML=svg||'<p class="hint">Could not build an illustration for this segment.</p>';
+}
+function downloadIllustration(){
+ const svg=$('#illuswrap svg');
+ if(!svg){toast('Generate the illustration first');return}
+ const xml='<?xml version="1.0" encoding="UTF-8"?>\n'+svg.outerHTML;
+ const id=$('#f_id')?$('#f_id').value:'segment';
+ dl('DAPO100_'+id+'_illustration.svg',new Blob([xml],{type:'image/svg+xml'}));
+}
+
+/* ---------- Teams & Access (admin) ---------- */
+const FS_LABELS={fs1:'FS1 Road',fs2:'FS2 Units',fs3:'FS3 Drain',fs4:'FS4 Access',fs5:'FS5 Sketch'};
+function genPin(){return String(Math.floor(1000+Math.random()*9000))}
+function teamSetupView(){
+ if(!ME||!ME.admin)return blockedView('teams');
+ let html=`<div class="card"><h2>Create a team</h2><p class="hint">Set the team up, tick which field sheets it can enter, then add members below.</p>
+ <div class="grid">
+  <label>Team name<input id="nt_name" placeholder="e.g. Team 03"></label>
+  <label>Lead username<input id="nt_lead" placeholder="e.g. priya"></label>
+ </div>
+ <div class="row">${Object.entries(FS_LABELS).map(([k,l])=>`<label style="flex-direction:row;align-items:center;gap:6px;width:auto"><input type="checkbox" id="nt_${k}">${l}</label>`).join('')}</div>
+ <div class="row"><button class="btn" onclick="createTeam(this)">Create team</button></div></div>`;
+ D.teams.forEach(t=>{
+  const members=D.users.filter(u=>u.team===t.team);
+  const slug=String(t.team).replace(/[^a-zA-Z0-9_-]/g,'_');
+  html+=`<div class="card"><h2>${esc(t.team)}</h2><p class="hint">Lead: ${esc(t.lead_username||'-')}</p>
+  <div class="row">${Object.entries(FS_LABELS).map(([k,l])=>`<label style="flex-direction:row;align-items:center;gap:6px;width:auto"><input type="checkbox" ${t[k]==='Yes'?'checked':''} onchange="toggleTeamPerm('${esc(t.team)}','${k}',this.checked)">${l}</label>`).join('')}</div>
+  <h2 style="margin-top:14px">Members</h2>
+  <div class="tw"><table><tr><th>Name</th><th>Username</th><th>PIN</th><th></th></tr>
+  ${members.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.username)}</td><td>${esc(u.pin)}</td><td><a class="x" onclick="removeMember('${esc(u._id)}',this)">Remove</a></td></tr>`).join('')||'<tr><td colspan="4" style="color:var(--mut)">No members yet</td></tr>'}
+  </table></div>
+  <div class="row">
+   <input id="nm_name_${slug}" placeholder="Full name" style="width:150px">
+   <input id="nm_user_${slug}" placeholder="Username" style="width:120px">
+   <input id="nm_pin_${slug}" placeholder="PIN" style="width:80px" value="${genPin()}">
+   <button class="btn g" onclick="addMember('${esc(t.team)}',this)">+ Add member</button>
+  </div></div>`;
+ });
+ return html;
+}
+async function createTeam(btn){
+ const name=$('#nt_name').value.trim(),lead=$('#nt_lead').value.trim();
+ if(!name){toast('Enter a team name');return}
+ if(D.teams.some(t=>t.team===name)){toast('A team with that name already exists');return}
+ const r={team:name,lead_username:lead};
+ Object.keys(FS_LABELS).forEach(k=>r[k]=($('#nt_'+k).checked)?'Yes':'');
+ await withSpinner(btn,'Creating...',async()=>{
+  if(!await put('teams',r))return;
+  render();toast('Team '+name+' created');
+ });
+}
+async function toggleTeamPerm(team,key,on){
+ const row=D.teams.find(t=>t.team===team);if(!row)return;
+ const r=Object.assign({},row);r[key]=on?'Yes':'';
+ if(!await put('teams',r))return;
+ render();
+}
+async function addMember(team,btn){
+ const slug=String(team).replace(/[^a-zA-Z0-9_-]/g,'_');
+ const nameEl=$('#nm_name_'+slug),userEl=$('#nm_user_'+slug),pinEl=$('#nm_pin_'+slug);
+ if(!nameEl||!userEl||!pinEl){toast('Form fields not found');return}
+ const name=nameEl.value.trim(),username=userEl.value.trim(),pin=pinEl.value.trim();
+ if(!name||!username||!pin){toast('Enter name, username and PIN');return}
+ if(D.users.some(u=>u.username===username)){toast('That username is already taken');return}
+ const r={username,pin,name,team,admin:''};
+ await withSpinner(btn,'Adding...',async()=>{
+  if(!await put('users',r))return;
+  render();toast(name+' added to '+team);
+ });
+}
+async function removeMember(id,btn){
+ const u=D.users.find(x=>x._id===id);
+ if(u&&u.username===ME.username){toast("You can't remove your own login while logged in");return}
+ if(!confirm('Remove this person\'s access?'))return;
+ await withSpinner(btn,'Removing...',()=>rm('users',id));
+ render();
+}
+
+/* ---------- CRUD ---------- */
+async function put(k,r){
+ if(!r._id)r._id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ try{const res=await gs('saveRow',SH[k].n,SH[k].c.map(c=>c.l),SH[k].c.map(c=>{const v=r[c.k];return (c.t==='n'||c.t==='auto')&&v!==''&&v!=null&&!isNaN(v)?Number(v):(v??'')}),r._id,ME.username);
+  if(!res||!res.ok){if(res&&res.denied)blockedToast(k);else toast('NOT saved: '+(res&&res.msg||'unknown error'));return false}
+ }catch(e){toast('NOT saved: '+(e.message||e));return false}
+ const i=D[k].findIndex(x=>x._id===r._id);i>=0?D[k][i]=r:D[k].push(r);return true}
+async function rm(k,id){
+ try{const res=await gs('deleteRow',SH[k].n,id,ME.username);if(!res||!res.ok){if(res&&res.denied)blockedToast(k);else toast('NOT deleted');return}}catch(e){toast('NOT deleted: '+(e.message||e));return}
+ D[k]=D[k].filter(x=>x._id!==id)}
+async function add(k,btn){
+ if(!canEdit(k)){blockedToast(k);return}
+ const r=readForm(k),idk='id';
+ const needsId=SH[k].c.some(c=>c.k==='id');
+ if(needsId&&!r.id){toast('Select or generate a Segment ID first');return}
+ if((k==='road')){
+  const dup=D[k].findIndex((x,i)=>x.id===r.id&&i!==edit);if(dup>=0){toast('Segment ID already exists - edit that row instead');return}
+  if(!r.a||!r.b){toast('Pick both Point A and Point B before saving');return}
+  if(r.a===r.b){toast('Point A and Point B must be different points');return}
+ }
+ if(k==='ptypes'){
+  if(!r.name||!r.symbol){toast('Enter both a type name and a symbol');return}
+  const dup=D.ptypes.findIndex((x,i)=>x.name.toLowerCase()===r.name.toLowerCase()&&i!==edit);
+  if(dup>=0){toast('That type already exists - edit that row instead');return}
+  if(TALLY.some(t=>t.toLowerCase()===r.name.toLowerCase())){toast('That name matches a built-in type already');return}
+ }
+ if(k==='sketch'&&r.id){
+  const missing=unplacedIntersections(r.id);
+  if(missing.length&&!confirm(missing.length+' intersection(s) tagged on this road have not been placed in the sequence: '+missing.map(p=>intersectionLabel(p.label,r.id)).join(', ')+'. Save anyway?'))return;
+ }
+ if(edit>=0){r._id=D[k][edit]._id;r._t=D[k][edit]._t}
+ else{
+  const idCol=SH[k].c.find(c=>c.k==='id');
+  if(idCol&&idCol.t==='segsel'){
+   const existingIdx=D[k].findIndex(x=>x.id===r.id);
+   if(existingIdx>=0){r._id=D[k][existingIdx]._id;r._t=D[k][existingIdx]._t}
+  }
+ }
+ if(!await withSpinner(btn,edit>=0?'Updating...':'Saving...',()=>put(k,r)))return;
+ edit=-1;if(k==='sketch')SEQ={l:[],r:[]};render();toast('Saved');
+}
+function go(t){tab=t;edit=-1;if(t==='sketch'){SEQ={l:[],r:[]};lastBt='Households'}if(t==='road')SESSION_INT=[];render();window.scrollTo(0,0)}
+function ed(k,i){
+ edit=i;
+ if(k==='sketch'){const row=D.sketch[i]||{};try{SEQ={l:JSON.parse(row.seql||'[]'),r:JSON.parse(row.seqr||'[]')}}catch(e){SEQ={l:[],r:[]}}}
+ render();window.scrollTo(0,0)}
+async function del(k,i,btn){if(confirm('Delete this row?')){await withSpinner(btn,'Deleting...',()=>rm(k,D[k][i]._id));render()}}
+function cancelEdit(k){edit=-1;if(k==='sketch')SEQ={l:[],r:[]};render()}
+function clearForm(k){if(k==='sketch')SEQ={l:[],r:[]};render()}
+
+/* ---------- views ---------- */
+function blockedView(k){
+ const who=whoHas(k),names=who.length?who.map(t=>t.team+' - lead: '+t.lead).join('<br>'):'no team assigned yet';
+ return `<div class="block"><h2>[Blocked] ${SH[k].t}</h2><p>Your team (<b>${esc(ME.team)}</b>) doesn't have access to enter data on this sheet.</p><p class="hint">Assigned team(s):<br>${names}</p><p class="hint">Ask an admin to add your team if this is wrong.</p></div>`}
+function letterForClient(n){let s='';n++;while(n>0){const rem=(n-1)%26;s=String.fromCharCode(65+rem)+s;n=Math.floor((n-1)/26)}return s}
+function captureGpsInto(latId,lngId){
+ if(!navigator.geolocation){toast('GPS not available in this browser');return}
+ toast('Getting location...');
+ navigator.geolocation.getCurrentPosition(
+  pos=>{const la=$('#'+latId),lo=$('#'+lngId);if(la)la.value=pos.coords.latitude.toFixed(6);if(lo)lo.value=pos.coords.longitude.toFixed(6);toast('Location captured (+/-'+Math.round(pos.coords.accuracy)+'m)')},
+  err=>toast('Could not get location: '+err.message),
+  {enableHighAccuracy:true,timeout:10000});
+}
+function roadTable(){
+ const s=SH.road,cols=s.c.filter(c=>c.t!=='hid');
+ return `<div class="card"><h2>${s.n} - ${D.road.length} row(s)</h2><div class="tw"><table><tr><th></th>${cols.map(c=>`<th>${c.l}</th>`).join('')}</tr>
+ ${D.road.map((r,i)=>`<tr><td><a class="x" onclick="ed('road',${i})">Edit</a><a class="x" onclick="del('road',${i},this)">Del</a></td>${cols.map(c=>`<td>${esc(r[c.k])}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="99" style="color:var(--mut)">No rows yet</td></tr>'}</table></div></div>`}
+function pointPicker(prefix,label,opts){
+ opts=opts||{};
+ const notYet=opts.allowNotYet?`<option value="">Not yet - I'll set this later</option>`:'';
+ const exclude=opts.exclude||'';
+ const sel=opts.selected||'';
+ return `<div class="grid">
+ <label>${label}<select id="${prefix}_pt" onchange="pointPickChange('${prefix}')">
+  ${notYet}<option value="__new__">+ Tag a new point now</option>
+  ${D.points.filter(p=>p.label!==exclude).map(p=>`<option value="${esc(p.label)}" ${p.label===sel?'selected':''}>${esc(ptLabel(p.label))}</option>`).join('')}
+ </select></label></div>
+ <div id="${prefix}_newbox" class="grid" style="display:none">
+  <label>Note / landmark<input id="${prefix}_note"></label>
+  <label>Latitude<input id="${prefix}_lat" type="number" step="any"></label>
+  <label>Longitude<input id="${prefix}_lng" type="number" step="any"></label>
+ </div>
+ <div id="${prefix}_gpsrow" class="row" style="display:none"><button type="button" class="btn g" onclick="captureGpsInto('${prefix}_lat','${prefix}_lng')">Use my current location</button></div>`
+}
+function pointPickChange(prefix){
+ const v=$('#'+prefix+'_pt').value,isNew=v==='__new__';
+ $('#'+prefix+'_newbox').style.display=isNew?'':'none';
+ $('#'+prefix+'_gpsrow').style.display=isNew?'':'none';
+}
+async function resolvePoint(prefix){
+ const sel=$('#'+prefix+'_pt').value;
+ if(!sel)return{ok:true,label:''};
+ if(sel==='__new__'){
+  const note=$('#'+prefix+'_note').value.trim(),lat=$('#'+prefix+'_lat').value,lng=$('#'+prefix+'_lng').value;
+  if(lat===''||lng===''){toast('Enter or capture latitude/longitude, or pick an existing point');return{ok:false}}
+  const r=await gs('createPoint',+lat,+lng,note,ME.username);
+  if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else{toast('Could not tag this point')}return{ok:false}}
+  D.points.push({label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),_id:r.id});
+  return{ok:true,label:r.label};
+ }
+ return{ok:true,label:sel};
+}
+async function computeLen(kmm,manualLen,aLabel,bLabel){
+ if((kmm||'GPS (points)')==='GPS (points)'&&aLabel&&bLabel){
+  const km=await gs('segmentGpsLengthKm',aLabel,bLabel);
+  return km==null?'':(+km.toFixed(3));
+ }
+ return manualLen||'';
+}
+function intersectionPanel(){
+ const chips=SESSION_INT.map((i,idx)=>`<span class="chip">${esc(i.label)}${i.note?': '+esc(i.note):''}</span>`).join('')||'<span class="hint">none tagged yet this session</span>';
+ return `<div class="card"><h2>Add intersections along this road</h2>
+ <p class="hint">Walking A toward B and find a junction or side road? Tag it here as you reach it.</p>
+ <div class="grid">
+  <label>Note / landmark<input id="wi_note" placeholder="e.g. Market Road junction"></label>
+  <label>Latitude<input id="wi_lat" type="number" step="any"></label>
+  <label>Longitude<input id="wi_lng" type="number" step="any"></label>
+ </div>
+ <div class="row"><button type="button" class="btn g" onclick="captureGpsInto('wi_lat','wi_lng')">Use my current location</button><button type="button" class="btn g" onclick="addIntersectionPoint(this)">+ Tag this intersection</button></div>
+ <p class="hint" style="margin-top:8px">Tagged this session:</p>${chips}</div>`
+}
+async function addIntersectionPoint(btn){
+ if(!canEdit('points')){blockedToast('points');return}
+ const note=$('#wi_note').value.trim(),lat=$('#wi_lat').value,lng=$('#wi_lng').value;
+ if(lat===''||lng===''){toast('Enter or capture latitude/longitude first');return}
+ await withSpinner(btn,'Tagging...',async()=>{
+  const r=await gs('createPoint',+lat,+lng,note,ME.username);
+  if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else{toast('Could not tag this point')}return}
+  const p={label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id};
+  D.points.push(p);
+  SESSION_INT.push({label:r.label,note:r.note,_id:r.id});
+  if(LAST_SEGMENT&&D.road.some(x=>x.id===LAST_SEGMENT)){p.parent=LAST_SEGMENT;await put('points',p)}
+  render();
+  toast('Tagged '+r.label+(r.note?': '+r.note:'')+(p.parent?' - linked to '+p.parent:''));
+ });
+}
+function growList(baseline,getter){
+ const s=new Set(baseline);
+ D.road.forEach(r=>{const v=getter(r);if(v)s.add(v)});
+ return[...s];
+}
+function roadSegmentView(){
+ const row=edit>=0?D.road[edit]:{};
+ return `<div class="card"><h2>${edit>=0?'Edit road segment':'New road segment'}</h2>
+ <p class="hint">Set Point A. Point B can be set now, or left for later if you haven't reached it yet - save now and come back to finish it once you have.</p>
+ <h3 style="font-size:13px;margin:10px 0 4px">Point A</h3>
+ ${pointPicker('ra','Point A',{selected:row.a||''})}
+ <h3 style="font-size:13px;margin:14px 0 4px">Point B</h3>
+ ${pointPicker('rb','Point B',{allowNotYet:true,selected:row.b||''})}
+ <h2 style="margin-top:16px">Road details</h2>
+ <div class="grid">
+  <label>Zone/ Colony<input id="wm_zone" value="${esc(row.zone||'')}"></label>
+  <label>Road<input id="wm_road" value="${esc(row.road||'')}"></label>
+  <label>Branch of (parent Seg ID)<select id="wm_parent" onchange="wmParentChange()"><option value="">None - new road</option>${D.road.filter(x=>x.id!==row.id).map(x=>`<option value="${esc(x.id)}" ${x.id===row.parent?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''} (${esc(x.a||'?')}->${esc(x.b||'?')})</option>`).join('')}</select></label>
+  <label>Km Method<select id="wm_kmm"><option ${row.kmm==='GPS (points)'||!row.kmm?'selected':''}>GPS (points)</option><option ${row.kmm==='Manual'?'selected':''}>Manual</option></select></label>
+  <label>Road Type<input id="wm_rt" list="dl_rt" value="${esc(row.rt||'')}"><datalist id="dl_rt">${growList(['Main','Secondary','Lane','Internal'],r=>r.rt).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
+  <label>Surface<input id="wm_sf" list="dl_sf" value="${esc(row.sf||'')}"><datalist id="dl_sf">${growList(['Paved','Unpaved','Mixed'],r=>r.sf).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
+  <label>Vehicle Access<input id="wm_va" list="dl_va" placeholder="e.g. Small pickup" value="${esc(row.va||'')}"><datalist id="dl_va">${growList(['Small pickup','Large truck','Two-wheeler only','Handcart only','None'],r=>r.va).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
+  <label>Width m<input id="wm_w" type="number" step="any" value="${esc(row.w||'')}"></label>
+  <label>Manual length km<input id="wm_len" type="number" step="any" placeholder="only if Km Method is Manual" value="${esc(row.len||'')}"></label>
+  <label class="wide">Connects to / Leads to<input id="wm_ct" placeholder="e.g. connects to NH-13, or dead end" value="${esc(row.ct||'')}"></label>
+ </div>
+ <div class="row"><button class="btn" onclick="saveRoadSegment(this)">${edit>=0?'Update road segment':'Save road segment'}</button>${edit>=0?`<button type="button" class="btn g" onclick="cancelEdit('road')">Cancel edit</button>`:''}</div></div>`
+}
+function wmParentChange(){
+ const p=$('#wm_parent'),z=$('#wm_zone');
+ if(p&&p.value&&z&&!z.value.trim()){
+  const parentRow=D.road.find(x=>x.id===p.value);
+  if(parentRow&&parentRow.zone)z.value=parentRow.zone;
+ }
+}
+async function saveRoadSegment(btn){
+ if(!canEdit('road')){blockedToast('road');return}
+ const ra=await resolvePoint('ra');
+ if(!ra.ok)return;
+ if(!ra.label){toast('Set Point A before saving');return}
+ const rb=await resolvePoint('rb');
+ if(!rb.ok)return;
+ if(rb.label&&rb.label===ra.label){toast('Point A and Point B must be different');return}
+ const zone=$('#wm_zone').value.trim(),road=$('#wm_road').value.trim(),parent=$('#wm_parent').value,
+  kmm=$('#wm_kmm').value||'GPS (points)',rt=$('#wm_rt').value,sf=$('#wm_sf').value,va=$('#wm_va').value.trim(),
+  w=$('#wm_w').value,manualLen=$('#wm_len').value,ct=$('#wm_ct')?$('#wm_ct').value.trim():'';
+ await withSpinner(btn,edit>=0?'Updating...':'Saving...',async()=>{
+ const len=await computeLen(kmm,manualLen,ra.label,rb.label);
+ if(edit>=0){
+  const id=D.road[edit].id;
+  const rowOut={id,a:ra.label,b:rb.label,parent,zone,road,kmm,so:'',eo:'',len,w,me:'',rt,sf,va,ph:'',ct,_id:D.road[edit]._id};
+  if(!await put('road',rowOut))return;
+  edit=-1;render();toast('Road segment updated');
+  return;
+ }
+ const cols=SH.road.c,headers=cols.map(c=>c.l);
+ const values=['',ra.label,rb.label,parent,zone,road,kmm,'','',len,w,'',rt,sf,va,'',ct];
+ const rowId=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ let res;
+ try{res=await gs('createSegment',parent,ME.username,headers,values,rowId)}
+ catch(e){toast('NOT saved: '+(e.message||e));return}
+ if(!res||!res.ok){if(res&&res.denied)blockedToast('road');else{toast('NOT saved: '+(res&&res.msg||'unknown error'))}return}
+ const id=res.id;
+ const row={};cols.forEach((c,i)=>row[c.k]=values[i]);row.id=id;row._id=rowId;
+ D.road.push(row);
+ LAST_SEGMENT=id;
+ for(const si of SESSION_INT){
+  const p=D.points.find(x=>x._id===si._id);
+  if(p&&!p.parent){p.parent=id;await put('points',p)}
+ }
+ render();
+ toast('Road saved as '+id+(rb.label?'':' - Point B still pending, edit this row once you reach it'));
+ });
+}
+function continueCard(){
+ if(!LAST_SEGMENT||!D.road.some(x=>x.id===LAST_SEGMENT))return '';
+ return `<div class="card"><h2>Continue working on ${esc(LAST_SEGMENT)}</h2>
+ <p class="hint">Jump straight to a sheet for this segment - no need to pick it from the dropdown again.</p>
+ <div class="row">
+  <button type="button" class="btn g" onclick="continueToSheet('prem')">FS2 Service Units</button>
+  <button type="button" class="btn g" onclick="continueToSheet('drain')">FS3 Drain Gutter</button>
+  <button type="button" class="btn g" onclick="continueToSheet('coll')">FS4 Access Hotspots</button>
+  <button type="button" class="btn g" onclick="continueToSheet('sketch')">FS5 Sketch Tally</button>
+ </div></div>`;
+}
+function continueToSheet(k){go(k)}
+function sheetView(k){
+ if(!canEdit(k))return blockedView(k);
+ if(k==='road')return roadSegmentView()+continueCard()+intersectionPanel()+roadTable();
+ const s=SH[k],row=edit>=0?D[k][edit]:{},cols=s.c.filter(c=>c.t!=='hid');
+ const onchAttr=` onchange="onCh('${k}')"`;
+ let html='';
+ if(k!=='points'||edit>=0){
+  html+=`<div class="card"><h2>${s.t}${k==='points'?' - edit entry':''}</h2><p class="hint">${k==='points'?'Fix a mistake in this point (note, latitude, longitude). To add a brand new point, use "Tag a new point" below instead.':(k==='road'?'Correcting an already-saved segment. To survey a new road, cancel this edit and use the guided walk instead.':s.h)}</p>
+  <div class="grid" oninput="onIn('${k}')"${onchAttr}>${cols.map(c=>`<label class="${c.t==='x'?'wide':''}">${c.l}${input(c,row[c.k])}</label>`).join('')}</div>
+  <div class="row"><button class="btn" onclick="add('${k}',this)">${edit>=0?'Update row':'Save row'}</button>${edit>=0?`<button class="btn g" onclick="cancelEdit('${k}')">Cancel edit</button>`:`<button class="btn g" onclick="clearForm('${k}')">Clear</button>`}${k==='sketch'?`<button type="button" class="btn g" onclick="genSketch()">Auto-generate sketch</button><button type="button" class="btn g" onclick="showIllustration()">Build illustration</button>`:''}</div>
+  ${k==='sketch'?`<div id="illuswrap" style="margin-top:12px"></div><div class="row" style="margin-top:8px"><button type="button" class="btn g" onclick="downloadIllustration()">Download illustration (SVG)</button></div>`:''}</div>`;
+ }
+ if(k==='points'&&edit<0)html+=pointPanel();
+ if(k==='sketch')html+=seqPanel();
+ if(k==='points'){html+=pointsGroupedView()}
+ else{
+ html+=`<div class="card"><h2>${s.n} - ${D[k].length} row(s)</h2><div class="tw"><table><tr><th></th>${cols.map(c=>`<th>${c.l}</th>`).join('')}</tr>
+ ${D[k].map((r,i)=>`<tr><td><a class="x" onclick="ed('${k}',${i})">Edit</a><a class="x" onclick="del('${k}',${i},this)">Del</a></td>${cols.map(c=>`<td>${esc(r[c.k])}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="99" style="color:var(--mut)">No rows yet</td></tr>'}</table></div></div>`;
+ }
+ return html}
+let expandedGroups={};
+function pointsGroupedView(){
+ const cols=SH.points.c.filter(c=>c.t!=='hid');
+ const groups={};
+ D.points.forEach(p=>{const key=p.parent||'__none__';(groups[key]=groups[key]||[]).push(p)});
+ const keys=Object.keys(groups).sort((a,b)=>a==='__none__'?1:b==='__none__'?-1:a.localeCompare(b));
+ let html=`<div class="card"><h2>Points - ${D.points.length} total</h2><p class="hint">Grouped by the road each point was found along. Tap a row to show or hide its points.</p>`;
+ keys.forEach(key=>{
+  const seg=key==='__none__'?null:D.road.find(x=>x.id===key);
+  const title=key==='__none__'?'Not yet linked to a road ('+groups[key].length+')':key+(seg&&seg.road?' - '+esc(seg.road):'')+' ('+groups[key].length+')';
+  const isOpen=!!expandedGroups[key];
+  html+=`<div style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
+   <button type="button" class="btn g" style="width:100%;text-align:left" onclick="toggleGroup('${esc(key)}')">${isOpen?'v':'>'} ${title}</button>`;
+  if(isOpen){
+   html+=`<div class="tw" style="margin-top:6px"><table><tr>${cols.map(c=>`<th>${c.l}</th>`).join('')}<th></th></tr>
+   ${groups[key].map(p=>{const i=D.points.indexOf(p);return `<tr>${cols.map(c=>`<td>${esc(p[c.k])}</td>`).join('')}<td><a class="x" onclick="ed('points',${i})">Edit</a><a class="x" onclick="del('points',${i},this)">Del</a></td></tr>`}).join('')}
+   </table></div>`;
+  }
+  html+='</div>';
+ });
+ html+='</div>';
+ return html;
+}
+function toggleGroup(key){expandedGroups[key]=!expandedGroups[key];render()}
+
+/* ---------- map (temporarily disabled while we track down a deploy issue) ---------- */
+function segCompletion(segId){
+ const have=[D.prem.some(p=>p.id===segId),D.drain.some(p=>p.id===segId),D.coll.some(p=>p.id===segId),D.sketch.some(p=>p.id===segId)];
+ const n=have.filter(Boolean).length;
+ return {n,color:n===4?'#1D9E75':n===0?'#B4B2A9':'#EF9F27'};
+}
+/* ---------- reports (kept from v1, unchanged logic) ---------- */
+function sum(a,f){return a.reduce((s,x)=>s+num(f(x)),0)}
+function f1(n){return (Math.round(n*100)/100).toString()}
+function count(a,f){const m={};a.forEach(x=>{const v=f(x)||'(blank)';m[v]=(m[v]||0)+1});return m}
+function bars(m){const e=Object.entries(m).sort((a,b)=>b[1]-a[1]),mx=Math.max(1,...e.map(x=>x[1]));return e.map(([k,v])=>`<div class="bar"><em>${esc(k)}</em><i style="width:${v/mx*140}px"></i>${f1(v)}</div>`).join('')||'<p class="hint">No data</p>'}
+function home(){
+ const R=D.road,P=D.prem,Dr=D.drain,Co=D.coll,Sk=D.sketch,Pt=D.points;
+ const km=sum(R,r=>r.len),premTot=sum(P,r=>r.tot);
+ const k=(b,s)=>`<div class="kpi"><b>${b}</b><span>${s}</span></div>`;
+ const zones={};R.forEach(r=>{const z=r.zone||'(blank)';const o=zones[z]=zones[z]||{n:0,km:0,w:0,wn:0,ids:[]};o.n++;o.km+=num(r.len);if(r.w!==''){o.w+=num(r.w);o.wn++}o.ids.push(r.id)});
+ const zrows=Object.entries(zones).map(([z,o])=>{
+  const pr=P.filter(p=>o.ids.includes(p.id)),dr=Dr.filter(p=>o.ids.includes(p.id)),co=Co.filter(p=>o.ids.includes(p.id));
+  return `<tr><td>${esc(z)}</td><td>${o.n}</td><td>${f1(o.km)}</td><td>${o.wn?f1(o.w/o.wn):'-'}</td><td>${f1(sum(pr,r=>r.tot))}</td><td>${f1(sum(dr,r=>num(r.ll)+num(r.rl)))}</td><td>${f1(sum(co,r=>r.gv))}</td><td>${f1(sum(co,r=>r.bp))}</td></tr>`}).join('');
+ const ptLabels=new Set(Pt.map(p=>p.label));
+ const chk=[];
+ R.forEach(r=>{const m=[];
+  if(!P.some(x=>x.id===r.id))m.push('FS2');if(!Dr.some(x=>x.id===r.id))m.push('FS3');if(!Co.some(x=>x.id===r.id))m.push('FS4');if(!Sk.some(x=>x.id===r.id))m.push('FS5');
+  if(m.length)chk.push(`${esc(r.id)}: missing ${m.join(', ')}`);
+  if(r.w===''||r.len==='')chk.push(`${esc(r.id)}: width or length missing`);
+  if(r.a&&!ptLabels.has(r.a))chk.push(`${esc(r.id)}: Point A "${esc(r.a)}" not found in Points`);
+  if(r.b&&!ptLabels.has(r.b))chk.push(`${esc(r.id)}: Point B "${esc(r.b)}" not found in Points`);
+  if(r.parent&&!R.some(x=>x.id===r.parent))chk.push(`${esc(r.id)}: branch parent "${esc(r.parent)}" not found`);
+ });
+ [['prem',P],['drain',Dr],['coll',Co],['sketch',Sk]].forEach(([n,a])=>a.forEach(r=>{if(!R.some(x=>x.id===r.id))chk.push(`${esc(r.id)}: in ${SH[n].n.split(' ')[0]} but no FS1 row`)}));
+ Dr.forEach(r=>{if(r.ld==='No'&&num(r.ll)>0)chk.push(`${esc(r.id)}: left drain "No" but length ${r.ll}`);if(r.rd==='No'&&num(r.rl)>0)chk.push(`${esc(r.id)}: right drain "No" but length ${r.rl}`);
+  const s=R.find(x=>x.id===r.id);if(s&&s.len!==''&&(num(r.ll)>num(s.len)*1000||num(r.rl)>num(s.len)*1000))chk.push(`${esc(r.id)}: drain longer than segment`)});
+ Sk.forEach(r=>{const p=P.find(x=>x.id===r.id);if(p&&num(r.t0)!==num(p.p0))chk.push(`${esc(r.id)}: households differ FS2 (${p.p0||0}) vs FS5 (${r.t0})`)});
+ const dup=count(R,r=>r.id);Object.entries(dup).forEach(([i,n])=>n>1&&chk.push(`${esc(i)}: duplicate Seg ID`));
+ Pt.filter(p=>p.parent).forEach(p=>{
+  const sk=Sk.find(s=>s.id===p.parent);
+  let placed=false;
+  if(sk){try{placed=[...JSON.parse(sk.seql||'[]'),...JSON.parse(sk.seqr||'[]')].some(it=>it.t==='__intersection__'&&it.pt===p.label)}catch(e){}}
+  if(!placed)chk.push(`${esc(p.parent)}: intersection ${esc(p.label)}${p.note?' ('+esc(p.note)+')':''} tagged but not placed in the FS5 sequence`);
+ });
+ const dsum=D.daily.map(r=>`<tr><td>${esc(r.dt)}</td><td>${esc(r.tm)}</td><td>${esc(r.zn)}</td><td>${esc(r.ns)}</td><td>${esc(r.km)}</td><td>${esc(r.ck)}</td><td>${esc(r.rv)}</td></tr>`).join('');
+ return `<div class="kpis">${k(R.length,'Road segments')}${k(f1(km),'Total km mapped')}${k(R.length?f1(sum(R,r=>r.w)/Math.max(1,R.filter(r=>r.w!=='').length)):'-','Avg road width m')}${k(Pt.length,'GPS points tagged')}
+ ${k(f1(premTot),'Premises served')}${k(f1(sum(Dr,r=>num(r.ll)+num(r.rl))),'Drain length m')}${k(Dr.filter(r=>r.lb==='Yes'||r.rb==='Yes').length,'Blocked drains')}${k(f1(sum(Co,r=>r.gv)),'GVP / dumps')}${k(f1(sum(Co,r=>r.bp)),'Burning points')}${k(Co.filter(r=>r.ap).length,'Access problems')}</div>
+ <div class="card"><h2>Data checks</h2>${chk.length?chk.slice(0,40).map(c=>`<div class="warn">! ${c}</div>`).join(''):'<div class="ok">OK - No issues found'+(R.length?'':' (no data yet)')+'</div>'}</div>
+ <div class="card"><h2>By zone / colony</h2><div class="tw"><table><tr><th>Zone</th><th>Segs</th><th>km</th><th>Avg width</th><th>Premises</th><th>Drain m</th><th>GVPs</th><th>Burning</th></tr>${zrows||'<tr><td colspan="8">No data</td></tr>'}</table></div></div>
+ <div class="card"><h2>Road type</h2>${bars(count(R,r=>r.rt))}<h2 style="margin-top:12px">Surface</h2>${bars(count(R,r=>r.sf))}<h2 style="margin-top:12px">Vehicle access</h2>${bars(count(R,r=>r.va))}</div>
+ <div class="card"><h2>Drains (by side type)</h2>${bars(count([...Dr.map(r=>r.lt),...Dr.map(r=>r.rt)].map(t=>({t})),x=>x.t))}<h2 style="margin-top:12px">Drain condition (both sides)</h2>${bars(count([...Dr.map(r=>r.lc),...Dr.map(r=>r.rc)].map(t=>({t})),x=>x.t))}</div>
+ <div class="card"><h2>Premises by category</h2>${bars(Object.fromEntries(PREM.map((p,i)=>[p,sum(P,r=>r['p'+i])]).filter(x=>x[1]>0)))}</div>
+ <div class="card"><h2>Collection</h2>${bars(count(Co,r=>r.fr))}<h2 style="margin-top:12px">Drain/river dumping</h2>${bars(count(Co,r=>r.dr))}</div>
+ <div class="card"><h2>Daily team log</h2><div class="tw"><table><tr><th>Date</th><th>Team</th><th>Zone</th><th>Segs</th><th>km</th><th>Checked</th><th>Revisit</th></tr>${dsum||'<tr><td colspan="7">No data</td></tr>'}</table></div></div>
+ ${segmentReportCard()}`}
+let REPORT_SEG='';
+function groupCompletenessLines(rootId){
+ const collect=(id,seen)=>{seen=seen||new Set();if(seen.has(id))return[];seen=new Set(seen);seen.add(id);
+  const seg=D.road.find(x=>x.id===id);if(!seg)return[];
+  let out=[seg];D.road.filter(x=>x.parent===id).forEach(ch=>{out=out.concat(collect(ch.id,seen))});
+  return out;
+ };
+ const SHEET_NAMES=['FS2','FS3','FS4','FS5'];
+ return collect(rootId).map(seg=>{
+  const have=[D.prem.some(p=>p.id===seg.id),D.drain.some(p=>p.id===seg.id),D.coll.some(p=>p.id===seg.id),D.sketch.some(p=>p.id===seg.id)];
+  const missing=SHEET_NAMES.filter((n,i)=>!have[i]);
+  return {id:seg.id,road:seg.road,missing};
+ });
+}
+function completenessStatusHTML(rootId){
+ const lines=groupCompletenessLines(rootId);
+ const incomplete=lines.filter(l=>l.missing.length);
+ if(!incomplete.length)return `<div class="ok" style="margin-bottom:10px">OK - all segments in this group have FS2-FS5 complete</div>`;
+ return `<div class="warn" style="margin-bottom:10px"><b>Before you download - ${incomplete.length} of ${lines.length} segment(s) in this group are incomplete:</b><br>${incomplete.map(l=>esc(l.id)+(l.road?' ('+esc(l.road)+')':'')+': missing '+l.missing.join(', ')).join('<br>')}</div>`;
+}
+function segmentReportCard(){
+ const opts=D.road.map(x=>`<option value="${esc(x.id)}" ${x.id===REPORT_SEG?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''}</option>`).join('');
+ return `<div class="card"><h2>Segment Detail Report</h2><p class="hint">Pick any segment to see its complete FS1-FS5 details, plus every branch road surveyed off it.</p>
+ <select id="segReportPick" onchange="REPORT_SEG=this.value;render()"><option value="">Select a segment...</option>${opts}</select>
+ ${REPORT_SEG?completenessStatusHTML(REPORT_SEG)+segmentDetailBlock(REPORT_SEG,0,new Set()):''}
+ </div>`;
+}
+function fieldRows(cols,row){
+ return cols.filter(c=>c.t!=='hid').map(c=>`<tr><td style="color:var(--mut);padding:2px 10px 2px 0;white-space:nowrap">${c.l}</td><td>${esc(row[c.k])}</td></tr>`).join('');
+}
+function sheetSection(title,cols,row){
+ if(!row)return `<p class="hint" style="margin:4px 0 10px">${title}: not yet entered</p>`;
+ return `<details style="margin:4px 0 10px" open><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--acc)">${title}</summary><table style="font-size:12px;margin-top:4px">${fieldRows(cols,row)}</table></details>`;
+}
+function segmentDetailBlock(segId,depth,visited){
+ const seg=D.road.find(x=>x.id===segId);
+ if(!seg)return `<p class="warn">! ${esc(segId)} not found</p>`;
+ if(visited.has(segId))return `<p class="warn">! ${esc(segId)} skipped - circular branch reference</p>`;
+ if(depth>12)return `<p class="warn">! Branch nesting too deep past ${esc(segId)} - stopped</p>`;
+ visited=new Set(visited);visited.add(segId);
+ const indent=depth*18;
+ let html=`<div style="margin-left:${indent}px;border-left:3px solid ${depth===0?'var(--acc)':'var(--line)'};padding-left:10px;margin-top:${depth===0?14:8}px">
+  <h3 style="margin:0 0 6px;font-size:${depth===0?15:13}px">${esc(seg.id)}${seg.road?' - '+esc(seg.road):''}${depth>0?' (branch)':''}</h3>`;
+ html+=sheetSection('FS1 Road Segment',SH.road.c,seg);
+ html+=sheetSection('FS2 Service Units',SH.prem.c,D.prem.find(p=>p.id===segId));
+ html+=sheetSection('FS3 Drain Gutter',SH.drain.c,D.drain.find(p=>p.id===segId));
+ html+=sheetSection('FS4 Access Hotspots',SH.coll.c,D.coll.find(p=>p.id===segId));
+ html+=sheetSection('FS5 Sketch Tally',SH.sketch.c,D.sketch.find(p=>p.id===segId));
+ D.road.filter(x=>x.parent===segId).forEach(ch=>{html+=segmentDetailBlock(ch.id,depth+1,visited)});
+ html+='</div>';
+ return html;
+}
+
+/* ---------- export ---------- */
+function wb(){const w=XLSX.utils.book_new();
+ const cell=v=>{if(v===''||v==null)return '';const n=+v;return (typeof v==='number'||(v!==''&&isFinite(n)&&String(v).trim()!=='' && !/[a-zA-Z]/.test(String(v))))?n:v};
+ [...KEYS,...(ME&&ME.admin?ADMIN_KEYS:[])].forEach(k=>{const s=SH[k],ws=XLSX.utils.aoa_to_sheet([s.c.map(c=>c.l),...D[k].map(r=>s.c.map(c=>cell(r[c.k])))]);XLSX.utils.book_append_sheet(w,ws,s.n.slice(0,31))});return w}
+function dl(name,data){const a=document.createElement('a');a.href=URL.createObjectURL(data);a.download=name;document.body.appendChild(a);a.click();a.remove()}
+function xlsx(){const w=wb();addNetworkSheet(w);const a=XLSX.write(w,{type:'array',bookType:'xlsx'});dl('DAPO100_survey_'+new Date().toISOString().slice(0,10)+'.xlsx',new Blob([a],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))}
+/* ---------- network report (grouped, all sheets combined) ---------- */
+function networkCols(){
+ return [
+  ['FS1',SH.road.c.filter(c=>c.t!=='hid')],
+  ['FS2',SH.prem.c.filter(c=>c.t!=='hid'&&c.k!=='id')],
+  ['FS3',SH.drain.c.filter(c=>c.t!=='hid'&&c.k!=='id')],
+  ['FS4',SH.coll.c.filter(c=>c.t!=='hid'&&c.k!=='id')],
+  ['FS5',SH.sketch.c.filter(c=>c.t!=='hid'&&c.k!=='id'&&c.k!=='zone'&&c.k!=='road'&&c.k!=='a'&&c.k!=='b')],
+ ];
+}
+function networkGroups(){
+ const mains=D.road.filter(r=>!r.parent);
+ const descendants=(id,seen)=>{
+  seen=seen||new Set();if(seen.has(id))return[];seen=new Set(seen);seen.add(id);
+  let out=[];
+  D.road.filter(r=>r.parent===id).forEach(ch=>{out.push(ch);out=out.concat(descendants(ch.id,seen))});
+  return out;
+ };
+ return mains.map(m=>({main:m,branches:descendants(m.id)}));
+}
+function networkRow(seg){
+ const prem=D.prem.find(p=>p.id===seg.id)||{},drain=D.drain.find(p=>p.id===seg.id)||{},coll=D.coll.find(p=>p.id===seg.id)||{},sk=D.sketch.find(p=>p.id===seg.id)||{};
+ const cols=networkCols();
+ let row=[];
+ row=row.concat(cols[0][1].map(c=>seg[c.k]??''));
+ row=row.concat(cols[1][1].map(c=>prem[c.k]??''));
+ row=row.concat(cols[2][1].map(c=>drain[c.k]??''));
+ row=row.concat(cols[3][1].map(c=>coll[c.k]??''));
+ row=row.concat(cols[4][1].map(c=>sk[c.k]??''));
+ return row;
+}
+function addNetworkSheet(w){
+ const cols=networkCols();
+ const header=cols.flatMap(([tag,cs])=>cs.map(c=>tag+': '+c.l));
+ const aoa=[];
+ networkGroups().forEach(g=>{
+  const all=[g.main,...g.branches];
+  const totalKm=f1(sum(all,r=>r.len));
+  const totalPrem=f1(all.reduce((s,r)=>{const p=D.prem.find(x=>x.id===r.id);return s+(p?num(p.tot):0)},0));
+  const teams=[...new Set(D.sketch.filter(s=>all.some(r=>r.id===s.id)).map(s=>s.team).filter(Boolean))].join(', ');
+  const incomplete=groupCompletenessLines(g.main.id).filter(l=>l.missing.length);
+  const completeness=incomplete.length?'INCOMPLETE - '+incomplete.map(l=>l.id+' missing '+l.missing.join('/')).join('; '):'All sheets complete';
+  aoa.push(['Zone/Colony: '+(g.main.zone||'-')+'    Main Road: '+g.main.id+(g.main.road?' - '+g.main.road:'')+'    Intersection roads: '+g.branches.length+'    Total length: '+totalKm+' km    Total premises: '+totalPrem+(teams?'    Team(s): '+teams:'')]);
+  aoa.push(['Status: '+completeness]);
+  aoa.push(header);
+  all.forEach(r=>aoa.push(networkRow(r)));
+  aoa.push([]);
+ });
+ if(!aoa.length)aoa.push(['No road segments surveyed yet']);
+ aoa.push([]);aoa.push(['Generated '+new Date().toLocaleDateString()+' - Survey tool created by Vivekananda Public School (prototype)']);
+ const ws=XLSX.utils.aoa_to_sheet(aoa);
+ XLSX.utils.book_append_sheet(w,ws,'Network Report');
+}
+function networkReportHTML(){
+ const cols=networkCols();
+ const header=cols.flatMap(([tag,cs])=>cs.map(c=>tag+': '+c.l));
+ const groups=networkGroups();
+ if(!groups.length)return '<p>No road segments surveyed yet.</p>';
+ let html='';
+ groups.forEach(g=>{
+  const all=[g.main,...g.branches];
+  const totalKm=f1(sum(all,r=>r.len));
+  const totalPrem=f1(all.reduce((s,r)=>{const p=D.prem.find(x=>x.id===r.id);return s+(p?num(p.tot):0)},0));
+  const teams=[...new Set(D.sketch.filter(s=>all.some(r=>r.id===s.id)).map(s=>s.team).filter(Boolean))].join(', ');
+  const incomplete=groupCompletenessLines(g.main.id).filter(l=>l.missing.length);
+  html+=`<div class="netgroup"><h2>${esc(g.main.zone||'-')} - ${esc(g.main.id)}${g.main.road?' - '+esc(g.main.road):''}</h2>
+  <p class="netmeta">Intersection roads: ${g.branches.length} | Total length: ${totalKm} km | Total premises: ${totalPrem}${teams?' | Team(s): '+esc(teams):''}</p>
+  ${incomplete.length?`<p class="netmeta" style="color:#B4302A;font-weight:700">INCOMPLETE: `+incomplete.map(l=>esc(l.id)+' missing '+l.missing.join('/')).join('; ')+`</p>`:`<p class="netmeta" style="color:#1D9E75;font-weight:700">All sheets complete</p>`}
+  <div class="tw"><table><tr>${header.map(h=>`<th>${esc(h)}</th>`).join('')}</tr>
+  ${all.map(r=>`<tr>${networkRow(r).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}
+  </table></div></div>`;
+ });
+ return html;
+}
+function printNetworkReport(){
+ const w=window.open('','_blank');
+ if(!w){toast('Pop-up blocked - allow pop-ups for this site to print the report');return}
+ w.document.write(`<!DOCTYPE html><html><head><title>DAPO 100 Network Report</title><style>
+ body{font-family:Arial,sans-serif;color:#1a2420;padding:20px}
+ h1{font-size:18px} .netgroup{page-break-inside:avoid;margin-bottom:28px}
+ .netgroup h2{font-size:14px;background:#2f3833;color:#fff;padding:6px 10px;margin:0}
+ .netmeta{font-size:11px;color:#5c6b63;margin:4px 0 8px}
+ table{border-collapse:collapse;width:100%;font-size:9px} th,td{border:1px solid #c7cdc8;padding:3px 5px;text-align:left;white-space:nowrap}
+ th{background:#eef2ea}
+ .reportfooter{margin-top:24px;padding-top:10px;border-top:1px solid #c7cdc8;font-size:9px;color:#8a9690;text-align:center}
+ @media print{body{padding:0}.reportfooter{position:fixed;bottom:8px;left:0;right:0}}
+ </style></head><body>
+ <h1>DAPO 100 - Himalayan Fringes Project / Daporijo Clean Town Mission - Network Report</h1>
+ <p style="font-size:11px;color:#5c6b63">Generated ${new Date().toLocaleDateString()}</p>
+ ${networkReportHTML()}
+ <div class="reportfooter">Survey tool created by Vivekananda Public School (prototype)</div>
+ <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
+ </body></html>`);
+ w.document.close();
+}
+function exportView(){return `<div class="card"><h2>Export</h2>
+ <div class="row"><button class="btn" onclick="xlsx()">Download Excel (.xlsx)</button></div>
+ <p class="hint" style="margin-top:4px">Includes a "Network Report" sheet: every main road grouped with its intersection roads, all FS1-FS5 fields combined.</p>
+ <div class="row" style="margin-top:10px"><button class="btn g" onclick="printNetworkReport()">Print / Save Network Report as PDF</button></div>
+ </div>`}
+
+/* ---------- nav / render ---------- */
+function tabList(){
+ const list=[['home','Reports'],...KEYS.filter(k=>k!=='points').map(k=>[k,SH[k].n]),['data','Export']];
+ if(ME&&ME.admin)list.splice(list.length-1,0,['teams','Teams & Access']);
+ return list}
+function nav(){$('#nav').innerHTML=tabList().map(([k,l])=>`<button class="${tab===k?'on':''}" onclick="go('${k}')">${l}${D[k]?` (${D[k].length})`:''}</button>`).join('')}
+function render(){
+ $('#st').textContent=D._loaded?'* Connected to Google Sheet':'o Connecting...';
+ nav();
+ let view;
+ try{
+  view=tab==='home'?home():tab==='data'?exportView():tab==='teams'?teamSetupView():sheetView(tab);
+ }catch(e){
+  const err=$('#err');if(err){err.style.display='block';err.textContent='APP ERROR while drawing this screen - copy this and send it back:\n'+(e&&e.stack?e.stack:e)}
+  toast('Could not refresh this screen - your existing entries are untouched');
+  return;
+ }
+ $('#main').innerHTML=view;
+ if(tab==='road'&&canEdit('road')){pointPickChange('ra');pointPickChange('rb')}
+ if(['prem','drain','coll','sketch'].includes(tab)&&edit<0&&$('#f_id')&&$('#f_id').value)refreshAuto(tab);
+}
+
+/* ---------- load ---------- */
+async function load(){
+ if(!ME)return;
+ try{
+  const names=[...KEYS.map(k=>SH[k].n),...ADMIN_KEYS.map(k=>SH[k].n)];
+  const R=await gs('getAll',names);
+  [...KEYS,...ADMIN_KEYS].forEach((k,i)=>{const cs=SH[k].c;D[k]=(R[i]||[]).map((row,ri)=>{const o={};cs.forEach((c,ci)=>o[c.k]=row[ci]??'');o._id=row[cs.length];o._t=ri;return o})});
+  D._loaded=true;
+ }catch(e){toast('Sync error: '+(e.message||e))}
+ if(!document.activeElement||!document.activeElement.closest('#main'))render();
+}
+
+/* ---------- boot ---------- */
+window.addEventListener('DOMContentLoaded',()=>{
+ try{
+  const saved=JSON.parse(localStorage.getItem('dapo_login')||'null');
+  if(saved&&saved.u&&saved.p){$('#lu').value=saved.u;$('#lp').value=saved.p;doLogin()}
+ }catch(e){}
+});
+</script>
+</body></html>
