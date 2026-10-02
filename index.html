@@ -274,9 +274,14 @@ function input(c,v){
  }
  if(c.t==='segsel'){
   const dflt=(v==null||v==='')&&D.road.some(x=>x.id===LAST_SEGMENT)?LAST_SEGMENT:v;
-  const opts=D.road.map(x=>`<option value="${esc(x.id)}" ${x.id===dflt?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''} (${esc(x.a||'?')}->${esc(x.b||'?')})</option>`).join('');
+  const dfltFam=dflt?familyRootId(dflt):'';
+  const roots=familyRoots();
   const onch=c.k==='id'&&c.l==='Segment ID'?' onchange="seqReset()"':'';
-  return `<select id="${id}"${onch}><option value="">Select segment...</option>${opts}</select>`;
+  return `<select id="${id}_fam" onchange="segselFamChange('${id}')">
+  <option value="">Select road...</option>
+  ${roots.map(r=>`<option value="${esc(r.id)}" ${r.id===dfltFam?'selected':''}>${esc(r.id)}${r.road?' - '+esc(r.road):''}</option>`).join('')}
+ </select>
+ <select id="${id}"${onch} style="margin-top:6px"><option value="">Select segment...</option>${dfltFam?segFamilyOptions(dfltFam,dflt):''}</select>`;
  }
  if(c.t==='s'){const sel=v||(edit<0&&c.k==='kmm'?'GPS (points)':'');return `<select id="${id}"><option value=""></option>${c.o.map(o=>`<option ${o===sel?'selected':''}>${o}</option>`).join('')}</select>`}
  if(c.t==='c')return `<input id="${id}" list="dl_${c.k}" value="${val}"><datalist id="dl_${c.k}">${c.o.map(o=>`<option>${o}</option>`).join('')}</datalist>`;
@@ -792,29 +797,80 @@ function roadTable(){
  ${D.road.map((r,i)=>`<tr><td><a class="x" onclick="ed('road',${i})">Edit</a><a class="x" onclick="del('road',${i},this)">Del</a></td>${cols.map(c=>`<td>${esc((c.k==='a'||c.k==='b')&&r[c.k]?pointLabelById(r[c.k]):r[c.k])}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="99" style="color:var(--mut)">No rows yet</td></tr>'}</table></div></div>`}
 function pointPicker(prefix,label,opts){
  opts=opts||{};
- const notYet=opts.allowNotYet?`<option value="">Not yet - I'll set this later</option>`:'';
- const exclude=opts.exclude||'';
  const sel=opts.selected||'';
- return `<div class="grid">
- <label>${label}<select id="${prefix}_pt" onchange="pointPickChange('${prefix}')">
-  ${notYet}<option value="__new__">+ Tag a new point now</option>
-  ${D.points.filter(p=>p._id!==exclude).map(p=>`<option value="${esc(p._id)}" ${p._id===sel?'selected':''}>${esc(ptLabel(p._id))}</option>`).join('')}
+ const selFamily=sel?pointFamilyOf(sel):'';
+ const notYetOpt=opts.allowNotYet?`<option value="__notyet__" ${!sel?'selected':''}>Not yet - I'll set this later</option>`:'';
+ const newFamSelected=!sel&&!opts.allowNotYet;
+ const roots=familyRoots();
+ let html=`<div class="grid"><label>${label} - road<select id="${prefix}_fam" onchange="pointFamilyChange('${prefix}')">
+  ${notYetOpt}
+  <option value="__newfamily__" ${newFamSelected?'selected':''}>+ Start a brand new road</option>
+  ${roots.map(r=>`<option value="${esc(r.id)}" ${r.id===selFamily?'selected':''}>${esc(r.id)}${r.road?' - '+esc(r.road):''}</option>`).join('')}
  </select></label></div>
- <div id="${prefix}_newbox" class="grid" style="display:none">
+ <div id="${prefix}_ptwrap" class="grid" style="display:${selFamily?'':'none'}">
+  <label>Which point on that road?<select id="${prefix}_pt" onchange="pointPickChange('${prefix}')">
+   <option value="__new__" ${sel==='__new__'?'selected':''}>+ Tag a new point on this road</option>
+   ${selFamily?familyPointOptions(selFamily).map(o=>`<option value="${esc(o.id)}" ${o.id===sel?'selected':''}>${esc(o.label)}</option>`).join(''):''}
+  </select></label>
+ </div>
+ <div id="${prefix}_newbox" class="grid" style="display:${newFamSelected?'':'none'}">
   <label>Note / landmark<input id="${prefix}_note"></label>
   <label>Latitude<input id="${prefix}_lat" type="number" step="any"></label>
   <label>Longitude<input id="${prefix}_lng" type="number" step="any"></label>
  </div>
- <div id="${prefix}_gpsrow" class="row" style="display:none"><button type="button" class="btn g" onclick="captureGpsInto('${prefix}_lat','${prefix}_lng')">Use my current location</button></div>`
+ <div id="${prefix}_gpsrow" class="row" style="display:${newFamSelected?'':'none'}"><button type="button" class="btn g" onclick="captureGpsInto('${prefix}_lat','${prefix}_lng')">Use my current location</button></div>`;
+ return html;
+}
+function showNewPointFields(prefix,show){
+ const nb=$('#'+prefix+'_newbox'),gr=$('#'+prefix+'_gpsrow');
+ if(nb)nb.style.display=show?'':'none';
+ if(gr)gr.style.display=show?'':'none';
+}
+function pointFamilyChange(prefix){
+ const famSel=$('#'+prefix+'_fam'),famVal=famSel?famSel.value:'';
+ const ptwrap=$('#'+prefix+'_ptwrap');
+ if(famVal==='__newfamily__'||famVal==='__notyet__'||!famVal){
+  if(ptwrap)ptwrap.style.display='none';
+  showNewPointFields(prefix,famVal==='__newfamily__');
+ }else{
+  if(ptwrap){
+   ptwrap.style.display='';
+   const ptSel=$('#'+prefix+'_pt');
+   if(ptSel)ptSel.innerHTML=`<option value="__new__">+ Tag a new point on this road</option>${familyPointOptions(famVal).map(o=>`<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('')}`;
+  }
+  showNewPointFields(prefix,true);
+ }
+ if(prefix==='ra')wmAutoParent();
 }
 function pointPickChange(prefix){
- const v=$('#'+prefix+'_pt').value,isNew=v==='__new__';
- $('#'+prefix+'_newbox').style.display=isNew?'':'none';
- $('#'+prefix+'_gpsrow').style.display=isNew?'':'none';
+ const ptSel=$('#'+prefix+'_pt'),v=ptSel?ptSel.value:'__new__';
+ showNewPointFields(prefix,v==='__new__');
+ if(prefix==='ra')wmAutoParent();
+}
+// Picking an existing point for Point A already tells us which road this
+// branches from - no reason to make the user also pick it separately in
+// "Branch of". Still left editable in case of a genuine override.
+function wmAutoParent(){
+ const parentSel=$('#wm_parent');if(!parentSel)return;
+ const famSel=$('#ra_fam');if(!famSel)return;
+ const famVal=famSel.value;
+ if(famVal==='__newfamily__'){parentSel.value='';wmParentChange();return}
+ if(!famVal||famVal==='__notyet__')return;
+ const ptSel=$('#ra_pt'),ptVal=ptSel?ptSel.value:'';
+ if(ptVal&&ptVal!=='__new__'){
+  const owningSeg=D.road.find(s=>s.a===ptVal||s.b===ptVal);
+  if(owningSeg){parentSel.value=owningSeg.id;wmParentChange();return}
+  const pt=D.points.find(p=>p._id===ptVal);
+  if(pt&&pt.parent){parentSel.value=pt.parent;wmParentChange();return}
+ }
+ parentSel.value=famVal;
+ wmParentChange();
 }
 async function resolvePoint(prefix){
- const sel=$('#'+prefix+'_pt').value;
- if(!sel)return{ok:true,label:'',_id:''};
+ const famEl=$('#'+prefix+'_fam'),famVal=famEl?famEl.value:'';
+ if(!famVal||famVal==='__notyet__')return{ok:true,label:'',_id:''};
+ const ptEl=$('#'+prefix+'_pt');
+ const sel=(famVal==='__newfamily__')?'__new__':(ptEl?ptEl.value:'__new__');
  if(sel==='__new__'){
   const note=$('#'+prefix+'_note').value.trim(),lat=$('#'+prefix+'_lat').value,lng=$('#'+prefix+'_lng').value;
   if(lat===''||lng===''){toast('Enter or capture latitude/longitude, or pick an existing point');return{ok:false}}
@@ -826,6 +882,77 @@ async function resolvePoint(prefix){
  return{ok:true,label:pointLabelById(sel),isNew:false,_id:sel};
 }
 
+let FIX_POINT_ID='';
+function fixPointCard(){
+ return `<div class="card"><h2>Fix a point</h2>
+ <p class="hint">Wrong note or location on something already tagged? Search for it here to correct or remove it.</p>
+ <input id="fp_search" placeholder="Search by letter or note..." autocomplete="off" oninput="renderFixPointResults()">
+ <div id="fp_results" style="margin-top:4px"></div>
+ <div id="fp_edit" style="display:none;margin-top:10px">
+  <div class="grid">
+   <label>Note / landmark<input id="fp_note"></label>
+   <label>Latitude<input id="fp_lat" type="number" step="any"></label>
+   <label>Longitude<input id="fp_lng" type="number" step="any"></label>
+  </div>
+  <div class="row">
+   <button type="button" class="btn" onclick="saveFixedPoint(this)">Save changes</button>
+   <button type="button" class="btn g" onclick="deleteFixedPoint(this)">Delete this point</button>
+   <button type="button" class="btn g" onclick="cancelFixPoint()">Cancel</button>
+  </div>
+ </div></div>`;
+}
+function renderFixPointResults(){
+ const q=($('#fp_search')||{}).value||'';
+ const el=$('#fp_results');if(!el)return;
+ const ql=q.trim().toLowerCase();
+ let pts=D.points.slice();
+ if(ql)pts=pts.filter(p=>p.label.toLowerCase().includes(ql)||(p.note||'').toLowerCase().includes(ql));
+ pts=pts.slice(0,8);
+ el.innerHTML=pts.map(p=>`<div onclick="pickFixPoint('${esc(p._id)}')" style="cursor:pointer;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px">${esc(p.label)}${p.note?' - '+esc(p.note):''}${p.parent?' (on '+esc(p.parent)+')':' (not linked to a road)'}</div>`).join('')||(ql?'<p class="hint">No match</p>':'');
+}
+function pickFixPoint(id){
+ FIX_POINT_ID=id;
+ const p=D.points.find(x=>x._id===id);if(!p)return;
+ const se=$('#fp_search');if(se)se.value=p.label+(p.note?' - '+p.note:'');
+ const res=$('#fp_results');if(res)res.innerHTML='';
+ const nt=$('#fp_note'),la=$('#fp_lat'),lo=$('#fp_lng'),ed=$('#fp_edit');
+ if(nt)nt.value=p.note||'';
+ if(la)la.value=p.lat;
+ if(lo)lo.value=p.lng;
+ if(ed)ed.style.display='';
+}
+function cancelFixPoint(){
+ FIX_POINT_ID='';
+ const se=$('#fp_search'),res=$('#fp_results'),ed=$('#fp_edit');
+ if(se)se.value='';
+ if(res)res.innerHTML='';
+ if(ed)ed.style.display='none';
+}
+async function saveFixedPoint(btn){
+ if(!FIX_POINT_ID){toast('Search and pick a point first');return}
+ const p=D.points.find(x=>x._id===FIX_POINT_ID);if(!p)return;
+ p.note=$('#fp_note').value.trim();
+ p.lat=$('#fp_lat').value;
+ p.lng=$('#fp_lng').value;
+ await withSpinner(btn,'Saving...',async()=>{
+  if(!await put('points',p))return;
+  cancelFixPoint();render();
+  toast('Point updated');
+ });
+}
+async function deleteFixedPoint(btn){
+ if(!FIX_POINT_ID){toast('Search and pick a point first');return}
+ const p=D.points.find(x=>x._id===FIX_POINT_ID);if(!p)return;
+ const inUse=D.road.some(s=>s.a===p._id||s.b===p._id);
+ if(inUse){toast('Cannot delete - this is a road\'s own Point A or B. Edit that road first.');return}
+ if(!confirm('Delete point '+p.label+(p.note?' ('+p.note+')':'')+'? This cannot be undone.'))return;
+ await withSpinner(btn,'Deleting...',async()=>{
+  if(!await rm('points',p._id))return;
+  const idx=D.points.indexOf(p);if(idx>=0)D.points.splice(idx,1);
+  cancelFixPoint();render();
+  toast('Point deleted');
+ });
+}
 function intersectionPanel(){
  const chips=SESSION_INT.map((i,idx)=>`<span class="chip">${esc(i.label)}${i.note?': '+esc(i.note):''}</span>`).join('')||'<span class="hint">none tagged yet this session</span>';
  return `<div class="card"><h2>Add intersections along this road</h2>
@@ -858,6 +985,56 @@ async function addIntersectionPoint(btn){
   toast('Tagged '+p.label+(r.note?': '+r.note:'')+(p.parent?' - linked to '+p.parent:''));
  });
 }
+// A point's bare label means nothing on its own - what matters is which
+// road family it belongs to. These build a readable, grouped view of every
+// road and point instead of a flat alphabet list.
+function familyRoots(){return D.road.filter(s=>!s.parent)}
+function isPendingPoint(p){
+ if(!p.parent)return false;
+ return !D.road.some(s=>s.a===p._id||s.b===p._id);
+}
+function familyEntries(rootId){
+ const segs=[];
+ const walk=(id,seen)=>{
+  seen=seen||new Set();if(seen.has(id))return;seen=new Set(seen);seen.add(id);
+  const seg=D.road.find(x=>x.id===id);if(!seg)return;
+  segs.push(seg);
+  D.road.filter(x=>x.parent===id).forEach(ch=>walk(ch.id,seen));
+ };
+ walk(rootId);
+ const pending=D.points.filter(p=>p.parent&&isPendingPoint(p)&&familyRootId(p.parent)===rootId);
+ return{segs,pending};
+}
+function pointFamilyOf(pointId){
+ const p=D.points.find(x=>x._id===pointId);
+ if(p&&p.parent)return familyRootId(p.parent);
+ const seg=D.road.find(s=>s.a===pointId||s.b===pointId);
+ return seg?familyRootId(seg.id):'';
+}
+function familyPointOptions(rootId){
+ const{segs,pending}=familyEntries(rootId);
+ const opts=[];
+ segs.forEach(seg=>{
+  if(seg.a)opts.push({id:seg.a,label:seg.id+': '+pointLabelById(seg.a)+(seg.road?' - '+seg.road:'')});
+  if(seg.b)opts.push({id:seg.b,label:seg.id+': '+pointLabelById(seg.b)+(seg.road?' - '+seg.road:'')});
+ });
+ pending.forEach(p=>opts.push({id:p._id,label:'(not yet its own road) '+p.label+(p.note?' - '+p.note:'')}));
+ const seen=new Set();
+ return opts.filter(o=>seen.has(o.id)?false:(seen.add(o.id),true));
+}
+function segFamilyOptions(rootId,selectedSegId){
+ const{segs,pending}=familyEntries(rootId);
+ let html=segs.map(s=>`<option value="${esc(s.id)}" ${s.id===selectedSegId?'selected':''}>${esc(s.id)}${s.road?' - '+esc(s.road):''} (${esc(s.a?pointLabelById(s.a):'?')}-&gt;${esc(s.b?pointLabelById(s.b):'?')})</option>`).join('');
+ if(pending.length)html+=pending.map(p=>`<option value="" disabled>(not yet its own road) ${esc(p.label)}${p.note?' - '+esc(p.note):''}</option>`).join('');
+ return html;
+}
+function segselFamChange(id){
+ const famSel=$('#'+id+'_fam'),segSel=$('#'+id);
+ if(!famSel||!segSel)return;
+ const fam=famSel.value;
+ segSel.innerHTML=`<option value="">Select segment...</option>${fam?segFamilyOptions(fam,''):''}`;
+ segSel.dispatchEvent(new Event('change',{bubbles:true}));
+}
 function growList(baseline,getter){
  const s=new Set(baseline);
  D.road.forEach(r=>{const v=getter(r);if(v)s.add(v)});
@@ -875,7 +1052,11 @@ function roadSegmentView(){
  <div class="grid">
   <label>Zone/ Colony<input id="wm_zone" value="${esc(row.zone||'')}"></label>
   <label>Road<input id="wm_road" value="${esc(row.road||'')}"></label>
-  <label>Branch of (parent Seg ID)<select id="wm_parent" onchange="wmParentChange()"><option value="">None - new road</option>${D.road.filter(x=>x.id!==row.id).map(x=>`<option value="${esc(x.id)}" ${x.id===row.parent?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''} (${esc(x.a?pointLabelById(x.a):'?')}-&gt;${esc(x.b?pointLabelById(x.b):'?')})</option>`).join('')}</select></label>
+  <label>Branch of (parent Seg ID)<select id="wm_parent" onchange="wmParentChange()"><option value="">None - new road</option>${familyRoots().map(root=>{
+   const{segs}=familyEntries(root.id);
+   const opts=segs.filter(x=>x.id!==row.id).map(x=>`<option value="${esc(x.id)}" ${x.id===row.parent?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''} (${esc(x.a?pointLabelById(x.a):'?')}-&gt;${esc(x.b?pointLabelById(x.b):'?')})</option>`).join('');
+   return opts?`<optgroup label="${esc(root.id)}${root.road?' - '+esc(root.road):''}">${opts}</optgroup>`:'';
+  }).join('')}</select></label>
   <label>Road Type<input id="wm_rt" list="dl_rt" value="${esc(row.rt||'')}"><datalist id="dl_rt">${growList(['Main','Secondary','Lane','Internal'],r=>r.rt).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
   <label>Surface<input id="wm_sf" list="dl_sf" value="${esc(row.sf||'')}"><datalist id="dl_sf">${growList(['Paved','Unpaved','Mixed'],r=>r.sf).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
   <label>Vehicle Access<input id="wm_va" list="dl_va" placeholder="e.g. Small pickup" value="${esc(row.va||'')}"><datalist id="dl_va">${growList(['Small pickup','Large truck','Two-wheeler only','Handcart only','None'],r=>r.va).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
@@ -969,7 +1150,7 @@ function continueCard(){
 function continueToSheet(k){go(k)}
 function sheetView(k){
  if(!canEdit(k))return blockedView(k);
- if(k==='road')return roadSegmentView()+continueCard()+intersectionPanel()+roadTable();
+ if(k==='road')return roadSegmentView()+continueCard()+intersectionPanel()+fixPointCard()+roadTable();
  const s=SH[k],row=edit>=0?D[k][edit]:{},cols=s.c.filter(c=>c.t!=='hid');
  const onchAttr=` onchange="onCh('${k}')"`;
  let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>
@@ -1052,10 +1233,98 @@ function completenessStatusHTML(rootId){
  if(!incomplete.length)return `<div class="ok" style="margin-bottom:10px">OK - all segments in this group have FS2-FS5 complete</div>`;
  return `<div class="warn" style="margin-bottom:10px"><b>Before you download - ${incomplete.length} of ${lines.length} segment(s) in this group are incomplete:</b><br>${incomplete.map(l=>esc(l.id)+(l.road?' ('+esc(l.road)+')':'')+': missing '+l.missing.join(', ')).join('<br>')}</div>`;
 }
+// Colony map: the main road as a spine, every intersection road branching
+// off it, each branch's own branches drawn off IT in turn - a schematic
+// tree, not to scale, matching the hand-drawn reference. Position along a
+// parent uses the real walking-order sequence where the branch point was
+// actually placed; falls back to even spacing only when that is unknown.
+function branchPositionOnParent(parentSeg,childSeg){
+ if(childSeg.a===parentSeg.a)return 0;
+ if(childSeg.a===parentSeg.b)return 1;
+ const sk=D.sketch.find(s=>s.id===parentSeg.id);
+ if(sk){
+  try{
+   const combined=[...JSON.parse(sk.seql||'[]'),...JSON.parse(sk.seqr||'[]')];
+   const idx=combined.findIndex(it=>it.t==='__intersection__'&&it.pt===childSeg.a);
+   if(idx>=0)return(idx+1)/(combined.length+1);
+  }catch(e){}
+ }
+ return null;
+}
+function drawColonyBranch(seg,x1,y1,angleDeg,lengthPx,depth,svg,maxDepth,canvasW,canvasH){
+ const rad=angleDeg*Math.PI/180;
+ const margin=40;
+ let x2=x1+lengthPx*Math.cos(rad),y2=y1+lengthPx*Math.sin(rad);
+ x2=Math.max(margin,Math.min(canvasW-margin,x2));
+ y2=Math.max(margin,Math.min(canvasH-margin,y2));
+ const color=depth===0?'#0f4c81':depth===1?'#4c8fc0':'#93a09a';
+ const weight=Math.max(1.5,5-depth*1.2);
+ svg.lines.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="${weight}" stroke-linecap="round"><title>${esc(seg.id)}${seg.road?' - '+esc(seg.road):''}</title></line>`);
+ const comp=segCompletion(seg.id),mx=(x1+x2)/2,my=(y1+y2)/2;
+ svg.badges.push(`<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="5" fill="${comp.color}" stroke="#fff" stroke-width="1"/>`);
+ const prem=D.prem.find(p=>p.id===seg.id),premTxt=prem?(prem.tot||'0')+' premises':'';
+ const labelUp=depth%2===0;
+ const labelY=labelUp?y2-8:y2+14;
+ svg.labels.push(`<text x="${x2.toFixed(1)}" y="${labelY.toFixed(1)}" font-size="${Math.max(7,10-depth)}" font-weight="700" fill="#1a2420" text-anchor="middle">${esc(seg.id)}</text>`);
+ if(premTxt)svg.labels.push(`<text x="${x2.toFixed(1)}" y="${(labelY+(labelUp?-10:10)).toFixed(1)}" font-size="7" fill="#5c6b63" text-anchor="middle">${esc(premTxt)}</text>`);
+ if(depth===0){
+  svg.labels.push(`<circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="6" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${x1.toFixed(1)}" y="${(y1+22).toFixed(1)}" font-size="10" font-weight="700" fill="#0f4c81" text-anchor="middle">${esc(seg.a?pointLabelById(seg.a):'A')}</text>`);
+  svg.labels.push(`<circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="6" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${x2.toFixed(1)}" y="${(y2+22).toFixed(1)}" font-size="10" font-weight="700" fill="#0f4c81" text-anchor="middle">${esc(seg.b?pointLabelById(seg.b):'B')}</text>`);
+ }
+ if(depth>=maxDepth)return;
+ const children=D.road.filter(c=>c.parent===seg.id);
+ if(!children.length)return;
+ const childLen=Math.max(40,lengthPx*0.42);
+ children.forEach((child,i)=>{
+  const pos=branchPositionOnParent(seg,child);
+  const t=pos!=null?Math.max(0.08,Math.min(0.92,pos)):(i+1)/(children.length+1);
+  const bx=x1+(x2-x1)*t,by=y1+(y2-y1)*t;
+  const spread=Math.max(20,45-depth*6);
+  const branchAngle=Math.max(-75,Math.min(75,angleDeg+(i%2===0?-spread:spread)));
+  drawColonyBranch(child,bx,by,branchAngle,childLen,depth+1,svg,maxDepth,canvasW,canvasH);
+ });
+}
+function colonyLegend(x,y){
+ const items=[['Main road / direct branch','#0f4c81'],['Branch of a branch','#4c8fc0'],['Deeper branch','#93a09a']];
+ let html=`<text x="${x}" y="${y}" font-size="9" font-weight="700" fill="#1a2420">Legend:</text>`;
+ items.forEach(([label,color],i)=>{
+  const ly=y+16+i*14;
+  html+=`<line x1="${x}" y1="${ly-3}" x2="${x+20}" y2="${ly-3}" stroke="${color}" stroke-width="3"/><text x="${x+26}" y="${ly}" font-size="8" fill="#5c6b63">${esc(label)}</text>`;
+ });
+ const dotY=y+16+items.length*14+10;
+ html+=`<text x="${x}" y="${dotY}" font-size="8" fill="#5c6b63">Dot colour = FS2-FS5 completeness (green=done, amber=partial, grey=FS1 only)</text>`;
+ return html;
+}
+function colonyMapSVG(rootId){
+ const root=D.road.find(x=>x.id===rootId);
+ if(!root)return null;
+ const W=1200,H=760;
+ const svg={lines:[],badges:[],labels:[]};
+ drawColonyBranch(root,180,H/2,0,W-360,0,svg,5,W,H);
+ const legend=colonyLegend(30,H-90);
+ return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:#fdfdfb;border-radius:8px;border:1px solid var(--line)">
+ <text x="${W/2}" y="30" text-anchor="middle" font-size="16" font-weight="700" fill="#1a2420">${esc(root.zone||'')} ${esc(root.id)}${root.road?' - '+esc(root.road):''}</text>
+ ${svg.lines.join('')}${svg.badges.join('')}${svg.labels.join('')}${legend}
+ </svg>`;
+}
+function showColonyMap(rootId){
+ const wrap=$('#colonymapwrap');
+ if(!wrap)return;
+ const svg=colonyMapSVG(rootId);
+ wrap.innerHTML=svg||'<p class="hint">Could not build a map for this road.</p>';
+}
+function downloadColonyMap(){
+ const svg=$('#colonymapwrap svg');
+ if(!svg){toast('Build the map first');return}
+ const xml='<?xml version="1.0" encoding="UTF-8"?>\n'+svg.outerHTML;
+ dl('DAPO100_'+(REPORT_SEG||'colony')+'_map.svg',new Blob([xml],{type:'image/svg+xml'}));
+}
 function segmentReportCard(){
- const opts=D.road.map(x=>`<option value="${esc(x.id)}" ${x.id===REPORT_SEG?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''}</option>`).join('');
- return `<div class="card"><h2>Segment Detail Report</h2><p class="hint">Pick any segment to see its complete FS1-FS5 details, plus every branch road surveyed off it.</p>
- <select id="segReportPick" onchange="REPORT_SEG=this.value;render()"><option value="">Select a segment...</option>${opts}</select>
+ const opts=familyRoots().map(x=>`<option value="${esc(x.id)}" ${x.id===REPORT_SEG?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''}</option>`).join('');
+ return `<div class="card"><h2>Segment Detail Report</h2><p class="hint">Pick a main road (colony) to see its complete FS1-FS5 details, plus every intersection road surveyed off it.</p>
+ <select id="segReportPick" onchange="REPORT_SEG=this.value;render()"><option value="">Select a road...</option>${opts}</select>
+ ${REPORT_SEG?`<div style="margin-top:14px"><button type="button" class="btn g" onclick="showColonyMap('${esc(REPORT_SEG)}')">Build colony map</button><button type="button" class="btn g" onclick="downloadColonyMap()">Download colony map (SVG)</button></div>
+ <div id="colonymapwrap" style="margin-top:10px"></div>`:''}
  ${REPORT_SEG?completenessStatusHTML(REPORT_SEG)+segmentDetailBlock(REPORT_SEG,0,new Set()):''}
  </div>`;
 }
