@@ -179,15 +179,38 @@ async function doLogin(btn){
  LOGGING_IN=true;
  const u=$('#lu').value.trim(),p=$('#lp').value.trim();
  if(!u||!p){$('#lerr').textContent='Enter a username and PIN';$('#lerr').style.display='block';LOGGING_IN=false;return}
+ $('#lerr').style.display='none';
  await withSpinner(btn,'Logging in...',async()=>{
+  // A slow first request (Apps Script cold start, or a weak connection) is
+  // common and often resolves itself - show progress rather than sitting
+  // silent, and retry once automatically before bothering the user with an
+  // error that a second attempt would likely have avoided.
+  const setProgress=(txt)=>{ if(btn)btn.innerHTML=`<span class="spin"></span>${esc(txt)}` };
+  const progressTimer=setTimeout(()=>setProgress('Still trying... (slow connection?)'),6000);
   try{
-   const r=await gs('login',u,p);
+   let r;
+   try{
+    r=await gs('login',u,p);
+   }catch(firstErr){
+    clearTimeout(progressTimer);
+    setProgress('Retrying...');
+    r=await gs('login',u,p);
+   }
+   clearTimeout(progressTimer);
    if(!r||!r.ok){$('#lerr').textContent=(r&&r.msg)||'Login failed';$('#lerr').style.display='block';LOGGING_IN=false;return}
    ME=r;
    try{localStorage.setItem('dapo_login',JSON.stringify({u,p}))}catch(e){}
    enterApp();
-  }catch(e){$('#lerr').textContent='Could not reach the server: '+(e.message||e);$('#lerr').style.display='block'}
+  }catch(e){
+   clearTimeout(progressTimer);
+   $('#lerr').textContent='Could not reach the server after two attempts: '+(e.message||e);
+   $('#lerr').style.display='block';
+  }
  });
+ // Defensive: withSpinner's own cleanup should already have done this, but
+ // confirm it directly too so a stuck "Logging in..." button is provably
+ // impossible no matter how the attempt above resolved.
+ if(btn){btn.disabled=false;btn.textContent='Log in'}
  LOGGING_IN=false;
 }
 function logout(){if(POLL_TIMER){clearInterval(POLL_TIMER);POLL_TIMER=null}ME=null;try{localStorage.removeItem('dapo_login')}catch(e){}$('#app').style.display='none';$('#loginWrap').style.display='block';$('#lu').value='';$('#lp').value=''}
@@ -269,16 +292,6 @@ function onCh(k){
  refreshAuto(k)}
 
 /* ---------- points panel (GPS capture) ---------- */
-function pointPanel(){
- return `<div class="card"><h2>Tag a new point</h2>
- <p class="hint">Stand at the junction/landmark, then capture GPS - or type coordinates by hand.</p>
- <div class="grid">
-  <label>Note / landmark<input id="p_note" placeholder="e.g. Main Junction"></label>
-  <label>Latitude<input id="p_lat" type="number" step="any"></label>
-  <label>Longitude<input id="p_lng" type="number" step="any"></label>
- </div>
- <div class="row"><button class="btn g" onclick="captureGps()">Use my current location</button><button class="btn" onclick="addPoint(this)">Save point</button></div>
- <p id="p_status" class="hint"></p></div>`}
 // Waits for a GPS fix accurate to within GOOD_ACCURACY_M (10m), since a
 // single quick reading can be off by tens or hundreds of metres - keeps
 // watching and reports progress via onUpdate, stopping early the moment a
@@ -305,32 +318,6 @@ function watchForAccuracy(onUpdate,onDone){
   ()=>{},
   {enableHighAccuracy:true,maximumAge:0,timeout:MAX_GPS_WAIT_MS}
  );
-}
-function captureGps(){
- if(!navigator.geolocation){toast('GPS not available in this browser');return}
- $('#p_status').textContent='Getting location... (waiting for a fix within +/-'+GOOD_ACCURACY_M+'m)';
- watchForAccuracy(
-  acc=>{$('#p_status').textContent='Refining location... currently +/-'+Math.round(acc)+'m'},
-  (pos,usedFallback)=>{
-   if(!pos){$('#p_status').textContent='Could not get a GPS fix';return}
-   $('#p_lat').value=pos.coords.latitude.toFixed(6);$('#p_lng').value=pos.coords.longitude.toFixed(6);
-   $('#p_status').textContent=(usedFallback?'Best available after waiting - ':'Location captured - ')+'+/-'+Math.round(pos.coords.accuracy)+'m';
-  }
- );
-}
-async function addPoint(btn){
- if(!canEdit('points')){blockedToast('points');return}
- const lat=$('#p_lat').value,lng=$('#p_lng').value,note=$('#p_note').value.trim();
- if(lat===''||lng===''){toast('Enter or capture latitude/longitude first');return}
- await withSpinner(btn,'Saving...',async()=>{
-  try{
-   const r=await gs('createPoint',+lat,+lng,note,ME.username);
-   if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else toast('Could not save point');return}
-   D.points.push({label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id});
-   $('#p_note').value='';$('#p_lat').value='';$('#p_lng').value='';$('#p_status').textContent='';
-   render();toast('Point '+r.label+' saved');
-  }catch(e){toast('Error: '+(e.message||e))}
- });
 }
 function blockedToast(sheetKey){
  const who=whoHas(sheetKey);
@@ -612,7 +599,52 @@ function teamSetupView(){
    <button class="btn g" onclick="addMember('${esc(t.team)}',this)">+ Add member</button>
   </div></div>`;
  });
+ html+=`<div class="card"><h2>One-time: relabel old points</h2><p class="hint">Points tagged before the per-road letter system (A, B, C... resetting for each road) still show their old plain letters. This finds them, gives each one its correct letter for the road it actually belongs to, and fixes every road that referenced them - all in one pass. Safe to run once; running it again will simply find nothing left to do.</p>
+ <div class="row"><button type="button" class="btn g" onclick="migrateOldPointLabels()">Run the one-time relabel</button></div>
+ <div id="migrateStatus" class="hint" style="margin-top:8px"></div></div>`;
  return html;
+}
+async function migrateOldPointLabels(){
+ if(!ME||!ME.admin){toast('Admin only');return}
+ if(!confirm('This finds any road whose Point A/B still references an old-style plain letter instead of the point itself, fixes that reference, and gives the point(s) involved their correct letter for that road\'s family. Points already linked the new way are left untouched. Continue?'))return;
+ const status=$('#migrateStatus');
+ const setStatus=(t)=>{if(status)status.textContent=t};
+ setStatus('Scanning...');
+ const segsReferencingByLabel=new Map();
+ D.road.forEach(seg=>{
+  ['a','b'].forEach(field=>{
+   const val=seg[field];
+   if(!val)return;
+   if(D.points.some(p=>p._id===val))return;
+   const pt=D.points.find(p=>p.label===val&&!p.parent);
+   if(!pt)return;
+   if(!segsReferencingByLabel.has(pt._id))segsReferencingByLabel.set(pt._id,[]);
+   segsReferencingByLabel.get(pt._id).push({seg,field});
+  });
+ });
+ if(segsReferencingByLabel.size===0){setStatus('Nothing to migrate - every road already references its points correctly.');return}
+ const byFamily=new Map();
+ segsReferencingByLabel.forEach((refs,ptId)=>{
+  const root=familyRootId(refs[0].seg.id);
+  if(!byFamily.has(root))byFamily.set(root,[]);
+  byFamily.get(root).push(ptId);
+ });
+ let relabeled=0;
+ for(const[root,ptIds] of byFamily){
+  const pts=D.points.filter(p=>ptIds.includes(p._id));
+  for(let i=0;i<pts.length;i++){
+   const p=pts[i],newLabel=letterForClient(i);
+   if(p.label!==newLabel){setStatus('Relabeling '+p.label+' -> '+newLabel+' (road '+root+')...');await relabelPoint(p,newLabel)}
+   relabeled++;
+  }
+ }
+ const touchedSegs=new Set();
+ segsReferencingByLabel.forEach((refs,ptId)=>{refs.forEach(({seg,field})=>{seg[field]=ptId;touchedSegs.add(seg)})});
+ let segsFixed=0;
+ for(const seg of touchedSegs){setStatus('Fixing road '+seg.id+'...');await put('road',seg);segsFixed++}
+ setStatus('Done - '+relabeled+' point(s) checked/relabeled, '+segsFixed+' road record(s) fixed.');
+ render();
+ toast('Migration complete');
 }
 async function createTeam(btn){
  const name=$('#nt_name').value.trim(),lead=$('#nt_lead').value.trim();
@@ -940,45 +972,14 @@ function sheetView(k){
  if(k==='road')return roadSegmentView()+continueCard()+intersectionPanel()+roadTable();
  const s=SH[k],row=edit>=0?D[k][edit]:{},cols=s.c.filter(c=>c.t!=='hid');
  const onchAttr=` onchange="onCh('${k}')"`;
- let html='';
- if(k!=='points'||edit>=0){
-  html+=`<div class="card"><h2>${s.t}${k==='points'?' - edit entry':''}</h2><p class="hint">${k==='points'?'Fix a mistake in this point (note, latitude, longitude). To add a brand new point, use "Tag a new point" below instead.':(k==='road'?'Correcting an already-saved segment. To survey a new road, cancel this edit and use the guided walk instead.':s.h)}</p>
+ let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>
   <div class="grid" oninput="onIn('${k}')"${onchAttr}>${cols.map(c=>`<label class="${c.t==='x'?'wide':''}">${c.l}${input(c,row[c.k])}</label>`).join('')}</div>
   <div class="row"><button class="btn" onclick="add('${k}',this)">${edit>=0?'Update row':'Save row'}</button>${edit>=0?`<button class="btn g" onclick="cancelEdit('${k}')">Cancel edit</button>`:`<button class="btn g" onclick="clearForm('${k}')">Clear</button>`}${k==='sketch'?`<button type="button" class="btn g" onclick="genSketch()">Auto-generate sketch</button><button type="button" class="btn g" onclick="showIllustration()">Build illustration</button>`:''}</div>
   ${k==='sketch'?`<div id="illuswrap" style="margin-top:12px"></div><div class="row" style="margin-top:8px"><button type="button" class="btn g" onclick="downloadIllustration()">Download illustration (SVG)</button></div>`:''}</div>`;
- }
- if(k==='points'&&edit<0)html+=pointPanel();
  if(k==='sketch')html+=seqPanel();
- if(k==='points'){html+=pointsGroupedView()}
- else{
  html+=`<div class="card"><h2>${s.n} - ${D[k].length} row(s)</h2><div class="tw"><table><tr><th></th>${cols.map(c=>`<th>${c.l}</th>`).join('')}</tr>
  ${D[k].map((r,i)=>`<tr><td><a class="x" onclick="ed('${k}',${i})">Edit</a><a class="x" onclick="del('${k}',${i},this)">Del</a></td>${cols.map(c=>`<td>${esc(r[c.k])}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="99" style="color:var(--mut)">No rows yet</td></tr>'}</table></div></div>`;
- }
  return html}
-let expandedGroups={};
-function pointsGroupedView(){
- const cols=SH.points.c.filter(c=>c.t!=='hid');
- const groups={};
- D.points.forEach(p=>{const key=p.parent||'__none__';(groups[key]=groups[key]||[]).push(p)});
- const keys=Object.keys(groups).sort((a,b)=>a==='__none__'?1:b==='__none__'?-1:a.localeCompare(b));
- let html=`<div class="card"><h2>Points - ${D.points.length} total</h2><p class="hint">Grouped by the road each point was found along. Tap a row to show or hide its points.</p>`;
- keys.forEach(key=>{
-  const seg=key==='__none__'?null:D.road.find(x=>x.id===key);
-  const title=key==='__none__'?'Not yet linked to a road ('+groups[key].length+')':key+(seg&&seg.road?' - '+esc(seg.road):'')+' ('+groups[key].length+')';
-  const isOpen=!!expandedGroups[key];
-  html+=`<div style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
-   <button type="button" class="btn g" style="width:100%;text-align:left" onclick="toggleGroup('${esc(key)}')">${isOpen?'v':'>'} ${title}</button>`;
-  if(isOpen){
-   html+=`<div class="tw" style="margin-top:6px"><table><tr>${cols.map(c=>`<th>${c.l}</th>`).join('')}<th></th></tr>
-   ${groups[key].map(p=>{const i=D.points.indexOf(p);return `<tr>${cols.map(c=>`<td>${esc(p[c.k])}</td>`).join('')}<td><a class="x" onclick="ed('points',${i})">Edit</a><a class="x" onclick="del('points',${i},this)">Del</a></td></tr>`}).join('')}
-   </table></div>`;
-  }
-  html+='</div>';
- });
- html+='</div>';
- return html;
-}
-function toggleGroup(key){expandedGroups[key]=!expandedGroups[key];render()}
 
 /* ---------- map (temporarily disabled while we track down a deploy issue) ---------- */
 function segCompletion(segId){
