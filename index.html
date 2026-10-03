@@ -1011,6 +1011,10 @@ async function addIntersectionPoint(btn){
  if(!canEdit('points')){blockedToast('points');return}
  const note=$('#wi_note').value.trim(),lat=$('#wi_lat').value,lng=$('#wi_lng').value;
  if(lat===''||lng===''){toast('Enter or capture latitude/longitude first');return}
+ SAVING_DEPTH++;
+ try{await addIntersectionPoint_(btn,note,lat,lng)}finally{SAVING_DEPTH--}
+}
+async function addIntersectionPoint_(btn,note,lat,lng){
  await withSpinner(btn,'Tagging...',async()=>{
   const r=await gs('createPoint',+lat,+lng,note,ME.username);
   if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else{toast('Could not tag this point')}return}
@@ -1134,6 +1138,10 @@ function wmParentChange(){
 }
 async function saveRoadSegment(btn){
  if(!canEdit('road')){blockedToast('road');return}
+ SAVING_DEPTH++;
+ try{await saveRoadSegment_(btn)}finally{SAVING_DEPTH--}
+}
+async function saveRoadSegment_(btn){
  const ra=await resolvePoint('ra');
  if(!ra.ok)return;
  if(!ra.label){toast('Set Point A before saving');return}
@@ -1571,8 +1579,16 @@ function hasUnsavedFormInput(){
  }
  return false;
 }
+let SAVING_DEPTH=0;
 async function load(){
  if(!ME)return;
+ // Creating a road/intersection is several sequential network round-trips
+ // (create the point(s), create the segment, relabel into the correct
+ // family letter). The 20s background refresh replacing all data mid-way
+ // through that chain - especially likely on a slow connection - can make
+ // the final relabel step lose the race, leaving a raw, wrong letter stuck.
+ // Skip this cycle entirely while any such chain is in flight.
+ if(SAVING_DEPTH>0)return;
  try{
   const names=[...KEYS.map(k=>SH[k].n),...ADMIN_KEYS.map(k=>SH[k].n)];
   const R=await gs('getAll',names);
