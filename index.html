@@ -992,8 +992,9 @@ async function deleteFixedPoint(btn){
 }
 function intersectionPanel(){
  const chips=SESSION_INT.map((i,idx)=>`<span class="chip">${esc(i.label)}${i.note?': '+esc(i.note):''}</span>`).join('')||'<span class="hint">none tagged yet this session</span>';
- return `<div class="card"><h2>Add intersections along this road</h2>
- <p class="hint">Walking A toward B and find a junction or side road? Tag it here as you reach it.</p>
+ const activeRoad=LAST_SEGMENT&&D.road.some(x=>x.id===LAST_SEGMENT)?LAST_SEGMENT:'';
+ return `<div class="card"><h2>Add intersections along ${activeRoad?esc(activeRoad):'a road'}</h2>
+ <p class="hint">${activeRoad?'Walking A toward B on '+esc(activeRoad)+' and find a junction or side road? Tag it here - it becomes its own road immediately, with Point B left for when you walk it.':'Save or open a road segment first (above) so a new intersection has something to attach to.'}</p>
  <div class="grid">
   <label>Note / landmark<input id="wi_note" placeholder="e.g. Market Road junction"></label>
   <label>Latitude<input id="wi_lat" type="number" step="any"></label>
