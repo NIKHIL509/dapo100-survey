@@ -346,14 +346,14 @@ function symbolFor(t){
  return standardSymbol(t);
 }
 function chip(t,u,pt){
- if(t==='__intersection__')return '[INTERSECTION: '+(pt?pointLabelById(pt):'?')+']';
+ if(t==='__intersection__')return '[INTERSECTION: '+(pt?intRoadLabelById(pt):'?')+']';
  return t==='Commercial Complex'?('[COMMERCIAL COMPLEX'+(u?': '+u:'')+']'):('['+symbolFor(t)+']');
 }
 function chipsHtml(side){
  const items=(SEQ&&SEQ[side])||[];
  return items.map((it,i)=>{
   let label;
-  try{label=it.t==='__intersection__'?('Intersection: '+esc(pointLabelById(it.pt))):esc(it.t)}catch(e){label='?'}
+  try{label=it.t==='__intersection__'?('Intersection: '+esc(intRoadLabelById(it.pt))):esc(it.t)}catch(e){label='?'}
   return `<span class="chip">${label}${it.t==='Commercial Complex'&&it.u?': '+esc(it.u):''}<a class="x" style="margin:0;font-weight:700" onclick="removeSeq('${side}',${i})">x</a></span>`;
  }).join('')||'<span class="hint">none added yet</span>';
 }
@@ -379,6 +379,17 @@ function seqPanel(){
  </div>
  <div id="seqview"><div style="margin-top:10px"><b style="font-size:12px">LEFT:</b><br>${chipsHtml('l')}</div><div style="margin-top:10px"><b style="font-size:12px">RIGHT:</b><br>${chipsHtml('r')}</div></div></div>`}
 function renderSeqUI(){const el=$('#seqview');if(!el)return;el.innerHTML=`<div style="margin-top:10px"><b style="font-size:12px">LEFT:</b><br>${chipsHtml('l')}</div><div style="margin-top:10px"><b style="font-size:12px">RIGHT:</b><br>${chipsHtml('r')}</div>`}
+// Shows the actual road each intersection point became (e.g. "DPO-R001-01"),
+// not just the bare letter - that's what makes it identifiable, since the
+// letter alone repeats across every road family.
+function intPointRoadLabel(p){
+ const seg=D.road.find(s=>s.a_id===p._id||s.b_id===p._id);
+ return seg?seg.id+(seg.road?' - '+seg.road:''):'(not yet its own road)';
+}
+function intRoadLabelById(id){
+ const p=D.points.find(x=>x._id===id);
+ return p?intPointRoadLabel(p):pointLabelById(id);
+}
 function renderIntResults(){
  const q=($('#int_search')||{}).value||'';
  const el=$('#int_results');if(!el)return;
@@ -389,14 +400,15 @@ function renderIntResults(){
   if(aMine!==bMine)return aMine-bMine;
   return a.label.localeCompare(b.label);
  });
- if(ql)pts=pts.filter(p=>p.label.toLowerCase().includes(ql)||(p.note||'').toLowerCase().includes(ql));
+ if(ql)pts=pts.filter(p=>p.label.toLowerCase().includes(ql)||(p.note||'').toLowerCase().includes(ql)||intPointRoadLabel(p).toLowerCase().includes(ql));
  pts=pts.slice(0,8);
  el.style.display=pts.length?'':'none';
- el.innerHTML=pts.map(p=>`<div onclick="pickIntPoint('${esc(p._id)}')" style="cursor:pointer;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px">${esc(p.label)}${p.note?' - '+esc(p.note):''}${p.parent===segId?' (this road)':p.parent?' (from '+esc(p.parent)+')':' (not yet linked to a road)'}</div>`).join('');
+ el.innerHTML=pts.map(p=>`<div onclick="pickIntPoint('${esc(p._id)}')" style="cursor:pointer;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px"><b>${esc(intPointRoadLabel(p))}</b> - ${esc(p.label)}${p.note?': '+esc(p.note):''}${p.parent===segId?' (this road)':''}</div>`).join('');
 }
 function pickIntPoint(id){
  SELECTED_INT_POINT=id;
- const se=$('#int_search');if(se)se.value=pointLabelById(id)+' selected - tap Add to LEFT/RIGHT';
+ const p=D.points.find(x=>x._id===id);
+ const se=$('#int_search');if(se)se.value=(p?intPointRoadLabel(p):pointLabelById(id))+' selected - tap Add to LEFT/RIGHT';
  const res=$('#int_results');if(res)res.style.display='none';
 }
 function btChange(){
@@ -501,9 +513,8 @@ function premiseIconSVG(type,symbol,cx,cy){
  return `<circle cx="${cx}" cy="${cy}" r="${s/2+1}" fill="#fff" stroke="#93a09a" stroke-width="2"/><text x="${cx}" y="${cy+3}" text-anchor="middle" font-size="8" font-weight="700" fill="#93a09a">${esc((symbol||'?').slice(0,2))}</text>`;
 }
 function intersectionLabel(pointId,segId){
- const siblings=D.points.filter(p=>p.parent===segId);
- const idx=siblings.findIndex(p=>p._id===pointId);
- return segId+'-A'+(idx+1);
+ const branch=D.road.find(s=>s.a_id===pointId||s.b_id===pointId);
+ return branch?branch.id:'(pending)';
 }
 function illustrationSVG(segId){
  const seg=D.road.find(x=>x.id===segId);
@@ -1007,6 +1018,44 @@ function intersectionPanel(){
  <div class="row"><button type="button" class="btn g" onclick="captureGpsInto('wi_lat','wi_lng')">Use my current location</button><button type="button" class="btn g" onclick="addIntersectionPoint(this)">+ Tag this intersection</button></div>
  <p class="hint" style="margin-top:8px">Tagged this session:</p>${chips}</div>`
 }
+// Shared by every "tag a point" action in FS1: creates the point, links it
+// to parentId (blank = a genuinely new, unrelated main road - letters reset
+// to A), and immediately creates its own real road record too, Point B left
+// for later. Used for starting a fresh main road, tagging a junction along
+// an active one, and (via addIntersectionPoint_, kept for compatibility)
+// the original intersections-panel entry point.
+async function tagAndCreateRoad_(parentId,note,lat,lng){
+ const r=await gs('createPoint',+lat,+lng,note,ME.username);
+ if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else toast('Could not tag this point');return null}
+ const p={label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id};
+ D.points.push(p);
+ if(parentId){
+  p.parent=parentId;
+  const root=familyRootId(parentId);
+  const[newLabel]=nextFamilyLetters(root,1,[p._id]);
+  await relabelPoint(p,newLabel);
+ }else if(p.label!=='A'){
+  // A brand new, unrelated main road always starts its own family fresh at
+  // A - Code.gs's raw label (a simple count of every point ever tagged) is
+  // meaningless here and must never leak through, however many unrelated
+  // points already exist elsewhere.
+  await relabelPoint(p,'A');
+ }
+ let newSegId='';
+ if(canEdit('road')){
+  const cols=SH.road.c,headers=cols.map(c=>c.l);
+  const values=['',p.label,'',parentId,'','','Manual','','','','','','','','','','' ,p._id,''];
+  const rowId=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  let res;
+  try{res=await gs('createSegment',parentId,ME.username,headers,values,rowId)}catch(e){res=null}
+  if(res&&res.ok){
+   newSegId=res.id;
+   const row={};cols.forEach((c,i)=>row[c.k]=values[i]);row.id=newSegId;row._id=rowId;
+   D.road.push(row);
+  }
+ }
+ return{p,newSegId};
+}
 async function addIntersectionPoint(btn){
  if(!canEdit('points')){blockedToast('points');return}
  const note=$('#wi_note').value.trim(),lat=$('#wi_lat').value,lng=$('#wi_lng').value;
@@ -1016,37 +1065,116 @@ async function addIntersectionPoint(btn){
 }
 async function addIntersectionPoint_(btn,note,lat,lng){
  await withSpinner(btn,'Tagging...',async()=>{
-  const r=await gs('createPoint',+lat,+lng,note,ME.username);
-  if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else{toast('Could not tag this point')}return}
-  const p={label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id};
-  D.points.push(p);
-  let newSegId='';
-  if(LAST_SEGMENT&&D.road.some(x=>x.id===LAST_SEGMENT)){
-   p.parent=LAST_SEGMENT;
-   const root=familyRootId(LAST_SEGMENT);
-   const[newLabel]=nextFamilyLetters(root,1,[p._id]);
-   await relabelPoint(p,newLabel);
-   // Tagging an intersection makes it a real road immediately - Point A set
-   // here and now, Point B filled in whenever that side road actually gets
-   // walked (reuses the same "finish Point B later" flow any pending
-   // segment already has; walking THAT road later can tag ITS OWN
-   // intersections the same way, to any depth).
-   if(!canEdit('road')){toast('Tagged '+p.label+(r.note?': '+r.note:'')+' - linked to '+LAST_SEGMENT+' (no permission to also create its own road record)');render();return}
-   const cols=SH.road.c,headers=cols.map(c=>c.l);
-   const values=['',p.label,'',LAST_SEGMENT,'','','Manual','','','','','','','','','','' ,p._id,''];
-   const rowId=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-   let res;
-   try{res=await gs('createSegment',LAST_SEGMENT,ME.username,headers,values,rowId)}catch(e){res=null}
-   if(res&&res.ok){
-    newSegId=res.id;
-    const row={};cols.forEach((c,i)=>row[c.k]=values[i]);row.id=newSegId;row._id=rowId;
-    D.road.push(row);
-   }
-  }
-  SESSION_INT.push({label:p.label,note:r.note,_id:r.id,seg:newSegId});
+  const parentId=(LAST_SEGMENT&&D.road.some(x=>x.id===LAST_SEGMENT))?LAST_SEGMENT:'';
+  const result=await tagAndCreateRoad_(parentId,note,lat,lng);
+  if(!result)return;
+  const{p,newSegId}=result;
+  SESSION_INT.push({label:p.label,note:p.note,_id:p._id,seg:newSegId});
   render();
-  toast(newSegId?('Tagged '+p.label+(r.note?': '+r.note:'')+' - now '+newSegId+' (finish Point B when you reach it)'):('Tagged '+p.label+(r.note?': '+r.note:'')+(p.parent?' - linked to '+p.parent:'')));
+  toast(newSegId?('Tagged '+p.label+(p.note?': '+p.note:'')+' - now '+newSegId+' (finish Point B when you reach it)'):('Tagged '+p.label+(p.note?': '+p.note:'')+(p.parent?' - linked to '+p.parent:'')));
  });
+}
+// One simple "tag a point" form drives three different actions depending
+// on context - starting a brand new main road, tagging a junction along the
+// active one, or finishing the active one's own Point B.
+async function tagPointAction(mode,btn){
+ if(!canEdit('points')){blockedToast('points');return}
+ const note=$('#wi_note').value.trim(),lat=$('#wi_lat').value,lng=$('#wi_lng').value;
+ if(lat===''||lng===''){toast('Enter or capture latitude/longitude first');return}
+ SAVING_DEPTH++;
+ try{
+  await withSpinner(btn,'Tagging...',async()=>{
+   if(mode==='finishB'){await finishPointB_(note,lat,lng);return}
+   const parentId=mode==='junction'?LAST_SEGMENT:'';
+   const result=await tagAndCreateRoad_(parentId,note,lat,lng);
+   if(!result)return;
+   if(mode==='new')LAST_SEGMENT=result.newSegId||LAST_SEGMENT;
+   render();
+   toast(result.newSegId?('Tagged '+result.p.label+' - now '+result.newSegId):('Tagged '+result.p.label));
+  });
+ }finally{SAVING_DEPTH--}
+}
+async function finishPointB_(note,lat,lng){
+ const seg=D.road.find(x=>x.id===LAST_SEGMENT);
+ if(!seg)return;
+ const r=await gs('createPoint',+lat,+lng,note,ME.username);
+ if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else toast('Could not tag this point');return}
+ const p={label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id};
+ D.points.push(p);
+ const root=familyRootId(seg.id);
+ const[newLabel]=nextFamilyLetters(root,1,[p._id]);
+ await relabelPoint(p,newLabel);
+ seg.b=p.label;seg.b_id=p._id;
+ if(!await put('road',seg))return;
+ render();
+ toast(seg.id+' complete: '+seg.a+' -> '+seg.b);
+}
+async function saveRoadDetails(btn){
+ const seg=D.road.find(x=>x.id===LAST_SEGMENT);
+ if(!seg)return;
+ const zone=$('#rd_zone').value.trim(),road=$('#rd_road').value.trim(),rt=$('#rd_rt').value,sf=$('#rd_sf').value,
+  va=$('#rd_va').value.trim(),w=$('#rd_w').value,len=$('#rd_len').value,ct=$('#rd_ct').value.trim();
+ await withSpinner(btn,'Saving...',async()=>{
+  const updated=Object.assign({},seg,{zone,road,rt,sf,va,w,len,ct});
+  if(!await put('road',updated))return;
+  Object.assign(seg,updated);
+  toast('Road details saved');
+ });
+}
+function buildContinueOptgroup(root){
+ const{segs}=familyEntries(root.id);
+ const opts=segs.map(s=>`<option value="${esc(s.id)}">${esc(s.id)}${s.road?' - '+esc(s.road):''} (${esc(s.a||'?')}${s.b?' -> '+esc(s.b):' - not finished yet'})</option>`).join('');
+ return `<optgroup label="${esc(root.id)}${root.road?' - '+esc(root.road):''}">${opts}</optgroup>`;
+}
+function unifiedRoadFlow(){
+ const active=LAST_SEGMENT&&D.road.find(x=>x.id===LAST_SEGMENT);
+ return active?activeRoadCard(active):noActiveRoadCard();
+}
+function noActiveRoadCard(){
+ const roots=familyRoots();
+ return `<div class="card"><h2>Tag your starting point</h2>
+ <p class="hint">Starting a brand new main road? Stand at its beginning and tag it here - it starts fresh at A.</p>
+ <div class="grid">
+  <label>Note / landmark<input id="wi_note" placeholder="e.g. Market Road start"></label>
+  <label>Latitude<input id="wi_lat" type="number" step="any"></label>
+  <label>Longitude<input id="wi_lng" type="number" step="any"></label>
+ </div>
+ <div class="row"><button type="button" class="btn g" onclick="captureGpsInto('wi_lat','wi_lng')">Use my current location</button><button type="button" class="btn" onclick="tagPointAction('new',this)">+ Start this road</button></div>
+ ${roots.length?`<p class="hint" style="margin-top:14px">Or continue a road you already started:</p>
+ <select onchange="if(this.value){LAST_SEGMENT=this.value;render()}">
+  <option value="">Select a road...</option>
+  ${roots.map(r=>buildContinueOptgroup(r)).join('')}
+ </select>`:''}
+ </div>`;
+}
+function activeRoadCard(seg){
+ const pending=!seg.b;
+ return `<div class="card"><h2>Road: ${esc(seg.id)} (${esc(seg.a||'?')}${seg.b?' -> '+esc(seg.b):' - walking toward B'})</h2>
+ <p class="hint">${pending?'Reached the end of this road, or found a junction along the way? Tag it below.':'Found a junction while walking this road? Tag it below.'}</p>
+ <div class="grid">
+  <label>Note / landmark<input id="wi_note" placeholder="e.g. Market Road junction"></label>
+  <label>Latitude<input id="wi_lat" type="number" step="any"></label>
+  <label>Longitude<input id="wi_lng" type="number" step="any"></label>
+ </div>
+ <div class="row"><button type="button" class="btn g" onclick="captureGpsInto('wi_lat','wi_lng')">Use my current location</button>
+  ${pending?`<button type="button" class="btn" onclick="tagPointAction('finishB',this)">This is the end of ${esc(seg.id)}</button>`:''}
+  <button type="button" class="btn${pending?' g':''}" onclick="tagPointAction('junction',this)">This is a junction / side road</button>
+ </div>
+ <p class="hint" style="margin-top:14px"><a onclick="LAST_SEGMENT='';render()" style="cursor:pointer;color:var(--acc)">Switch to a different road</a></p>
+ </div>
+ <div class="card"><h2>Road details (optional, fill in anytime)</h2>
+ <div class="grid">
+  <label>Zone/ Colony<input id="rd_zone" value="${esc(seg.zone||'')}"></label>
+  <label>Road name<input id="rd_road" value="${esc(seg.road||'')}"></label>
+  <label>Road Type<input id="rd_rt" list="dl_rd_rt" value="${esc(seg.rt||'')}"><datalist id="dl_rd_rt">${growList(['Main','Secondary','Lane','Internal'],r=>r.rt).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
+  <label>Surface<input id="rd_sf" list="dl_rd_sf" value="${esc(seg.sf||'')}"><datalist id="dl_rd_sf">${growList(['Paved','Unpaved','Mixed'],r=>r.sf).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
+  <label>Vehicle Access<input id="rd_va" list="dl_rd_va" placeholder="e.g. Small pickup" value="${esc(seg.va||'')}"><datalist id="dl_rd_va">${growList(['Small pickup','Large truck','Two-wheeler only','Handcart only','None'],r=>r.va).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
+  <label>Width m<input id="rd_w" type="number" step="any" value="${esc(seg.w||'')}"></label>
+  <label>Length km<input id="rd_len" type="number" step="any" value="${esc(seg.len||'')}"></label>
+  <label class="wide">Connects to / Leads to<input id="rd_ct" value="${esc(seg.ct||'')}"></label>
+ </div>
+ <div class="row"><button type="button" class="btn" onclick="saveRoadDetails(this)">Save road details</button></div>
+ </div>`;
 }
 // A point's bare label means nothing on its own - what matters is which
 // road family it belongs to. These build a readable, grouped view of every
@@ -1218,7 +1346,7 @@ function continueCard(){
 function continueToSheet(k){go(k)}
 function sheetView(k){
  if(!canEdit(k))return blockedView(k);
- if(k==='road')return continueCard()+intersectionPanel()+roadSegmentView()+fixPointCard()+roadTable();
+ if(k==='road')return(edit>=0?roadSegmentView():unifiedRoadFlow())+continueCard()+fixPointCard()+roadTable();
  const s=SH[k],row=edit>=0?D[k][edit]:{},cols=s.c.filter(c=>c.t!=='hid');
  const onchAttr=` onchange="onCh('${k}')"`;
  let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>
