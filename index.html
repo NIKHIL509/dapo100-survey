@@ -1210,7 +1210,7 @@ function continueCard(){
 function continueToSheet(k){go(k)}
 function sheetView(k){
  if(!canEdit(k))return blockedView(k);
- if(k==='road')return roadSegmentView()+continueCard()+intersectionPanel()+fixPointCard()+roadTable();
+ if(k==='road')return continueCard()+intersectionPanel()+roadSegmentView()+fixPointCard()+roadTable();
  const s=SH[k],row=edit>=0?D[k][edit]:{},cols=s.c.filter(c=>c.t!=='hid');
  const onchAttr=` onchange="onCh('${k}')"`;
  let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>
