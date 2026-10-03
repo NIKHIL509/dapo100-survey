@@ -763,6 +763,10 @@ function go(t){tab=t;edit=-1;if(t==='sketch'){SEQ={l:[],r:[]};lastBt='Households
 function ed(k,i){
  edit=i;
  if(k==='sketch'){const row=D.sketch[i]||{};try{SEQ={l:JSON.parse(row.seql||'[]'),r:JSON.parse(row.seqr||'[]')}}catch(e){SEQ={l:[],r:[]}}}
+ // opening an existing road for editing makes it the active one - so
+ // "Add intersections" and "Continue working on..." work on it right away,
+ // without needing to re-save it first just to make it current
+ if(k==='road'&&D.road[i])LAST_SEGMENT=D.road[i].id;
  render();window.scrollTo(0,0)}
 async function del(k,i,btn){if(confirm('Delete this row?')){await withSpinner(btn,'Deleting...',()=>rm(k,D[k][i]._id));render()}}
 function cancelEdit(k){edit=-1;if(k==='sketch')SEQ={l:[],r:[]};render()}
