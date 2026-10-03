@@ -75,7 +75,8 @@ road:{n:'FS1 Road Segments',t:'FS1 - Road Segment Measurement',perm:'fs1',h:'Seg
  C('zone','Zone/ Colony'),C('road','Road'),C('kmm','Km Method','s',['GPS (points)','Odometer','Manual']),
  C('so','Start Odo km','n'),C('eo','End Odo km','n'),C('len','Length km','n'),C('w','Width m','n'),C('me','M/E','s',['M','E']),
  C('rt','Road Type','s',['Main','Secondary','Lane','Internal']),C('sf','Surface','s',['Paved','Unpaved','Mixed']),
- C('va','Vehicle Access','c',['Small pickup','Large truck','Two-wheeler only','Handcart only','None']),C('ph','Photo'),C('ct','Connects to / Leads to')]},
+ C('va','Vehicle Access','c',['Small pickup','Large truck','Two-wheeler only','Handcart only','None']),C('ph','Photo'),C('ct','Connects to / Leads to'),
+ C('a_id','A Id','hid'),C('b_id','B Id','hid')]},
 prem:{n:'FS2 Service Units',t:'FS2 - Service-Unit Count',perm:'fs2',h:'Both sides of the segment. A complex counts as 1; its internal units go under "Units in Complex" only.',
  c:[C('id','Seg ID','segsel'),...PREM.map((p,i)=>i===5?C('p'+i,p):C('p'+i,p,'n')),C('tot','Total','auto')]},
 drain:{n:'FS3 Drain Gutter',t:'FS3 - Drain / Gutter Mapping',perm:'fs3',h:'Left/Right always based on travelling Point A -> Point B. The suggested length comes from the GPS distance between the segment\'s two points - measure the actual drain length yourself if it only covers part of the segment.',c:[
@@ -244,7 +245,7 @@ function autos(k,r){
  return r}
 function recalcSketch(r){
  const rd=D.road.find(x=>x.id===r.id);
- r.zone=rd?rd.zone||'':'';r.road=rd?rd.road||'':'';r.a=rd&&rd.a?pointLabelById(rd.a):'';r.b=rd&&rd.b?pointLabelById(rd.b):'';
+ r.zone=rd?rd.zone||'':'';r.road=rd?rd.road||'':'';r.a=rd?rd.a||'':'';r.b=rd?rd.b||'':'';
  TALLY.forEach((label,i)=>{r['l'+i]=SEQ.l.filter(it=>it.t===label).length;r['r'+i]=SEQ.r.filter(it=>it.t===label).length;r['t'+i]=r['l'+i]+r['r'+i]});
  r.seql=JSON.stringify(SEQ.l);r.seqr=JSON.stringify(SEQ.r);
  return r}
@@ -472,13 +473,13 @@ function genSketch(){
  const rd=D.road.find(x=>x.id===r.id)||{},dr=D.drain.find(x=>x.id===r.id)||{};
  const dline=(has,type,len)=>has==='No'||!type||type==='None'?'NO DRAIN':(type.toUpperCase()+' DRAIN '+(len||'?')+' m');
  const roadLine='--- '+(rd.road||'ROAD')+' - '+(rd.len!==undefined&&rd.len!==''?rd.len+' km':'? km')+' - '+(rd.w||'?')+' m === survey direction A to B --->';
- const txt=`POINT A: ${(rd.a?pointLabelById(rd.a):'').toUpperCase()}
+ const txt=`POINT A: ${(rd.a||'').toUpperCase()}
 LEFT SIDE: ${dline(dr.ld,dr.lt,dr.ll)}
 ${seqLine('l')}
 ${roadLine}
 RIGHT SIDE: ${dline(dr.rd,dr.rt,dr.rl)}
 ${seqLine('r')}
-POINT B: ${(rd.b?pointLabelById(rd.b):'').toUpperCase()}
+POINT B: ${(rd.b||'').toUpperCase()}
 
 Legend: [H] House | [SHOP] Shop | [DHABA] Restaurant/Dhaba | [SCHOOL] Institution | GVP* dump/hotspot | [COMMERCIAL COMPLEX: details] | other symbols per the Premise Types tab | sketch not to scale`;
  const e=$('#f_sk');if(e)e.value=txt}
@@ -522,8 +523,8 @@ function illustrationSVG(segId){
  svg+=`<line x1="${roadX1}" y1="${roadY}" x2="${roadX2}" y2="${roadY}" stroke="#2f3833" stroke-width="8" stroke-linecap="round"/>`;
  if(leftHas)svg+=`<line x1="${roadX1}" y1="${leftDrainY}" x2="${roadX2}" y2="${leftDrainY}" stroke="${drainColor(dr.lc)}" stroke-width="3" ${dr.lb==='Yes'?'stroke-dasharray="4 3"':''}/>`;
  if(rightHas)svg+=`<line x1="${roadX1}" y1="${rightDrainY}" x2="${roadX2}" y2="${rightDrainY}" stroke="${drainColor(dr.rc)}" stroke-width="3" ${dr.rb==='Yes'?'stroke-dasharray="4 3"':''}/>`;
- svg+=`<circle cx="${roadX1}" cy="${roadY}" r="7" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${roadX1}" y="${roadY+30}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f4c81">${esc(seg.a?pointLabelById(seg.a):'A')}</text>`;
- svg+=`<circle cx="${roadX2}" cy="${roadY}" r="7" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${roadX2}" y="${roadY+30}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f4c81">${esc(seg.b?pointLabelById(seg.b):'B')}</text>`;
+ svg+=`<circle cx="${roadX1}" cy="${roadY}" r="7" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${roadX1}" y="${roadY+30}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f4c81">${esc(seg.a||'A')}</text>`;
+ svg+=`<circle cx="${roadX2}" cy="${roadY}" r="7" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${roadX2}" y="${roadY+30}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f4c81">${esc(seg.b||'B')}</text>`;
  if(seg.ct)svg+=`<text x="${roadX2}" y="${roadY+44}" text-anchor="middle" font-size="9" fill="#5c6b63">-&gt; ${esc(seg.ct)}</text>`;
  svg+=`<text x="${(roadX1+roadX2)/2}" y="${roadY-44}" text-anchor="middle" font-size="10" fill="#8a9690">walking direction: A -&gt; B</text>`;
  function layoutRow(items,side){
@@ -604,52 +605,80 @@ function teamSetupView(){
    <button class="btn g" onclick="addMember('${esc(t.team)}',this)">+ Add member</button>
   </div></div>`;
  });
- html+=`<div class="card"><h2>One-time: relabel old points</h2><p class="hint">Points tagged before the per-road letter system (A, B, C... resetting for each road) still show their old plain letters. This finds them, gives each one its correct letter for the road it actually belongs to, and fixes every road that referenced them - all in one pass. Safe to run once; running it again will simply find nothing left to do.</p>
+ html+=`<div class="card"><h2>One-time: repair Point A/B data</h2><p class="hint">Fixes any road whose Point A/B column shows an internal code or an old plain letter instead of the correct, current letter. Safe to run any time; running it again will simply find nothing left to do.</p>
  <div class="row"><button type="button" class="btn g" onclick="migrateOldPointLabels()">Run the one-time relabel</button></div>
  <div id="migrateStatus" class="hint" style="margin-top:8px"></div></div>`;
  return html;
 }
 async function migrateOldPointLabels(){
  if(!ME||!ME.admin){toast('Admin only');return}
- if(!confirm('This finds any road whose Point A/B still references an old-style plain letter instead of the point itself, fixes that reference, and gives the point(s) involved their correct letter for that road\'s family. Points already linked the new way are left untouched. Continue?'))return;
+ if(!confirm('This repairs any road whose Point A/B column shows an internal code or an old-style plain letter instead of the correct, current letter, and makes sure every road keeps a stable link to its points behind the scenes. Continue?'))return;
  const status=$('#migrateStatus');
  const setStatus=(t)=>{if(status)status.textContent=t};
  setStatus('Scanning...');
+
+ // Case A: the sheet's a/b column already holds a point's raw internal id
+ // instead of its label - just needs the stable link captured and the
+ // visible column fixed to show the point's actual label.
+ let directFixes=0;
+ for(const seg of D.road){
+  let changed=false;
+  for(const field of['a','b']){
+   const idField=field+'_id';
+   if(seg[idField])continue;
+   const val=seg[field];
+   if(!val)continue;
+   const pt=D.points.find(p=>p._id===val);
+   if(!pt)continue;
+   seg[idField]=pt._id;seg[field]=pt.label;changed=true;
+  }
+  if(changed){setStatus('Fixing road '+seg.id+'...');await put('road',seg);directFixes++}
+ }
+
+ // Case B: predates the stable-link system entirely - a/b holds a bare
+ // label with no link at all. Find the point by that label and give it a
+ // proper family-scoped letter.
  const segsReferencingByLabel=new Map();
  D.road.forEach(seg=>{
   ['a','b'].forEach(field=>{
+   const idField=field+'_id';
+   if(seg[idField])return;
    const val=seg[field];
    if(!val)return;
-   if(D.points.some(p=>p._id===val))return;
    const pt=D.points.find(p=>p.label===val&&!p.parent);
    if(!pt)return;
    if(!segsReferencingByLabel.has(pt._id))segsReferencingByLabel.set(pt._id,[]);
    segsReferencingByLabel.get(pt._id).push({seg,field});
   });
  });
- if(segsReferencingByLabel.size===0){setStatus('Nothing to migrate - every road already references its points correctly.');return}
- const byFamily=new Map();
- segsReferencingByLabel.forEach((refs,ptId)=>{
-  const root=familyRootId(refs[0].seg.id);
-  if(!byFamily.has(root))byFamily.set(root,[]);
-  byFamily.get(root).push(ptId);
- });
- let relabeled=0;
- for(const[root,ptIds] of byFamily){
-  const pts=D.points.filter(p=>ptIds.includes(p._id));
-  for(let i=0;i<pts.length;i++){
-   const p=pts[i],newLabel=letterForClient(i);
-   if(p.label!==newLabel){setStatus('Relabeling '+p.label+' -> '+newLabel+' (road '+root+')...');await relabelPoint(p,newLabel)}
-   relabeled++;
+ let relabeled=0,segsFixed=0;
+ if(segsReferencingByLabel.size){
+  const byFamily=new Map();
+  segsReferencingByLabel.forEach((refs,ptId)=>{
+   const root=familyRootId(refs[0].seg.id);
+   if(!byFamily.has(root))byFamily.set(root,[]);
+   byFamily.get(root).push(ptId);
+  });
+  for(const[root,ptIds] of byFamily){
+   const pts=D.points.filter(p=>ptIds.includes(p._id));
+   for(let i=0;i<pts.length;i++){
+    const p=pts[i],newLabel=letterForClient(i);
+    if(p.label!==newLabel){setStatus('Relabeling '+p.label+' -> '+newLabel+' (road '+root+')...');await relabelPoint(p,newLabel)}
+    relabeled++;
+   }
   }
+  const touchedSegs=new Set();
+  segsReferencingByLabel.forEach((refs,ptId)=>{
+   const pt=D.points.find(p=>p._id===ptId);
+   refs.forEach(({seg,field})=>{seg[field+'_id']=ptId;seg[field]=pt?pt.label:seg[field];touchedSegs.add(seg)});
+  });
+  for(const seg of touchedSegs){setStatus('Fixing road '+seg.id+'...');await put('road',seg);segsFixed++}
  }
- const touchedSegs=new Set();
- segsReferencingByLabel.forEach((refs,ptId)=>{refs.forEach(({seg,field})=>{seg[field]=ptId;touchedSegs.add(seg)})});
- let segsFixed=0;
- for(const seg of touchedSegs){setStatus('Fixing road '+seg.id+'...');await put('road',seg);segsFixed++}
- setStatus('Done - '+relabeled+' point(s) checked/relabeled, '+segsFixed+' road record(s) fixed.');
+
+ if(directFixes===0&&relabeled===0){setStatus('Nothing to repair - every road already references its points correctly.');return}
+ setStatus('Done - '+directFixes+' road(s) had their display fixed directly, '+relabeled+' point(s) relabeled, '+segsFixed+' more road record(s) fixed.');
  render();
- toast('Migration complete');
+ toast('Repair complete');
 }
 async function createTeam(btn){
  const name=$('#nt_name').value.trim(),lead=$('#nt_lead').value.trim();
@@ -760,7 +789,7 @@ function familyRootId(segId){
 function familyMemberPoints(rootId,excludeIds){
  excludeIds=excludeIds||[];
  const ids=new Set();
- D.road.filter(s=>familyRootId(s.id)===rootId).forEach(s=>{if(s.a)ids.add(s.a);if(s.b)ids.add(s.b)});
+ D.road.filter(s=>familyRootId(s.id)===rootId).forEach(s=>{if(s.a_id)ids.add(s.a_id);if(s.b_id)ids.add(s.b_id)});
  D.points.forEach(p=>{if(p.parent&&familyRootId(p.parent)===rootId)ids.add(p._id)});
  excludeIds.forEach(id=>ids.delete(id));
  return[...ids].map(id=>D.points.find(p=>p._id===id)).filter(Boolean);
@@ -776,6 +805,14 @@ async function relabelPoint(point,newLabel){
  const old=point.label;
  point.label=newLabel;
  if(!await put('points',point)){point.label=old;return false}
+ // the sheet's own Point A/B columns must always show the CURRENT label,
+ // never a stale one - sync every segment that references this point
+ const affected=D.road.filter(s=>s.a_id===point._id||s.b_id===point._id);
+ for(const seg of affected){
+  if(seg.a_id===point._id)seg.a=newLabel;
+  if(seg.b_id===point._id)seg.b=newLabel;
+  await put('road',seg);
+ }
  return true;
 }
 function captureGpsInto(latId,lngId){
@@ -794,7 +831,7 @@ function captureGpsInto(latId,lngId){
 function roadTable(){
  const s=SH.road,cols=s.c.filter(c=>c.t!=='hid');
  return `<div class="card"><h2>${s.n} - ${D.road.length} row(s)</h2><div class="tw"><table><tr><th></th>${cols.map(c=>`<th>${c.l}</th>`).join('')}</tr>
- ${D.road.map((r,i)=>`<tr><td><a class="x" onclick="ed('road',${i})">Edit</a><a class="x" onclick="del('road',${i},this)">Del</a></td>${cols.map(c=>`<td>${esc((c.k==='a'||c.k==='b')&&r[c.k]?pointLabelById(r[c.k]):r[c.k])}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="99" style="color:var(--mut)">No rows yet</td></tr>'}</table></div></div>`}
+ ${D.road.map((r,i)=>`<tr><td><a class="x" onclick="ed('road',${i})">Edit</a><a class="x" onclick="del('road',${i},this)">Del</a></td>${cols.map(c=>`<td>${esc(r[c.k])}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="99" style="color:var(--mut)">No rows yet</td></tr>'}</table></div></div>`}
 function pointPicker(prefix,label,opts){
  opts=opts||{};
  const sel=opts.selected||'';
@@ -858,7 +895,7 @@ function wmAutoParent(){
  if(!famVal||famVal==='__notyet__')return;
  const ptSel=$('#ra_pt'),ptVal=ptSel?ptSel.value:'';
  if(ptVal&&ptVal!=='__new__'){
-  const owningSeg=D.road.find(s=>s.a===ptVal||s.b===ptVal);
+  const owningSeg=D.road.find(s=>s.a_id===ptVal||s.b_id===ptVal);
   if(owningSeg){parentSel.value=owningSeg.id;wmParentChange();return}
   const pt=D.points.find(p=>p._id===ptVal);
   if(pt&&pt.parent){parentSel.value=pt.parent;wmParentChange();return}
@@ -943,7 +980,7 @@ async function saveFixedPoint(btn){
 async function deleteFixedPoint(btn){
  if(!FIX_POINT_ID){toast('Search and pick a point first');return}
  const p=D.points.find(x=>x._id===FIX_POINT_ID);if(!p)return;
- const inUse=D.road.some(s=>s.a===p._id||s.b===p._id);
+ const inUse=D.road.some(s=>s.a_id===p._id||s.b_id===p._id);
  if(inUse){toast('Cannot delete - this is a road\'s own Point A or B. Edit that road first.');return}
  if(!confirm('Delete point '+p.label+(p.note?' ('+p.note+')':'')+'? This cannot be undone.'))return;
  await withSpinner(btn,'Deleting...',async()=>{
@@ -991,7 +1028,7 @@ async function addIntersectionPoint(btn){
 function familyRoots(){return D.road.filter(s=>!s.parent)}
 function isPendingPoint(p){
  if(!p.parent)return false;
- return !D.road.some(s=>s.a===p._id||s.b===p._id);
+ return !D.road.some(s=>s.a_id===p._id||s.b_id===p._id);
 }
 function familyEntries(rootId){
  const segs=[];
@@ -1008,15 +1045,15 @@ function familyEntries(rootId){
 function pointFamilyOf(pointId){
  const p=D.points.find(x=>x._id===pointId);
  if(p&&p.parent)return familyRootId(p.parent);
- const seg=D.road.find(s=>s.a===pointId||s.b===pointId);
+ const seg=D.road.find(s=>s.a_id===pointId||s.b_id===pointId);
  return seg?familyRootId(seg.id):'';
 }
 function familyPointOptions(rootId){
  const{segs,pending}=familyEntries(rootId);
  const opts=[];
  segs.forEach(seg=>{
-  if(seg.a)opts.push({id:seg.a,label:seg.id+': '+pointLabelById(seg.a)+(seg.road?' - '+seg.road:'')});
-  if(seg.b)opts.push({id:seg.b,label:seg.id+': '+pointLabelById(seg.b)+(seg.road?' - '+seg.road:'')});
+  if(seg.a_id)opts.push({id:seg.a_id,label:seg.id+': '+seg.a+(seg.road?' - '+seg.road:'')});
+  if(seg.b_id)opts.push({id:seg.b_id,label:seg.id+': '+seg.b+(seg.road?' - '+seg.road:'')});
  });
  pending.forEach(p=>opts.push({id:p._id,label:'(not yet its own road) '+p.label+(p.note?' - '+p.note:'')}));
  const seen=new Set();
@@ -1024,7 +1061,7 @@ function familyPointOptions(rootId){
 }
 function segFamilyOptions(rootId,selectedSegId){
  const{segs,pending}=familyEntries(rootId);
- let html=segs.map(s=>`<option value="${esc(s.id)}" ${s.id===selectedSegId?'selected':''}>${esc(s.id)}${s.road?' - '+esc(s.road):''} (${esc(s.a?pointLabelById(s.a):'?')}-&gt;${esc(s.b?pointLabelById(s.b):'?')})</option>`).join('');
+ let html=segs.map(s=>`<option value="${esc(s.id)}" ${s.id===selectedSegId?'selected':''}>${esc(s.id)}${s.road?' - '+esc(s.road):''} (${esc(s.a||'?')}-&gt;${esc(s.b||'?')})</option>`).join('');
  if(pending.length)html+=pending.map(p=>`<option value="" disabled>(not yet its own road) ${esc(p.label)}${p.note?' - '+esc(p.note):''}</option>`).join('');
  return html;
 }
@@ -1045,16 +1082,16 @@ function roadSegmentView(){
  return `<div class="card"><h2>${edit>=0?'Edit road segment':'New road segment'}</h2>
  <p class="hint">Set Point A. Point B can be set now, or left for later if you haven't reached it yet - save now and come back to finish it once you have.</p>
  <h3 style="font-size:13px;margin:10px 0 4px">Point A</h3>
- ${pointPicker('ra','Point A',{selected:row.a||''})}
+ ${pointPicker('ra','Point A',{selected:row.a_id||''})}
  <h3 style="font-size:13px;margin:14px 0 4px">Point B</h3>
- ${pointPicker('rb','Point B',{allowNotYet:true,selected:row.b||''})}
+ ${pointPicker('rb','Point B',{allowNotYet:true,selected:row.b_id||''})}
  <h2 style="margin-top:16px">Road details</h2>
  <div class="grid">
   <label>Zone/ Colony<input id="wm_zone" value="${esc(row.zone||'')}"></label>
   <label>Road<input id="wm_road" value="${esc(row.road||'')}"></label>
   <label>Branch of (parent Seg ID)<select id="wm_parent" onchange="wmParentChange()"><option value="">None - new road</option>${familyRoots().map(root=>{
    const{segs}=familyEntries(root.id);
-   const opts=segs.filter(x=>x.id!==row.id).map(x=>`<option value="${esc(x.id)}" ${x.id===row.parent?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''} (${esc(x.a?pointLabelById(x.a):'?')}-&gt;${esc(x.b?pointLabelById(x.b):'?')})</option>`).join('');
+   const opts=segs.filter(x=>x.id!==row.id).map(x=>`<option value="${esc(x.id)}" ${x.id===row.parent?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''} (${esc(x.a||'?')}-&gt;${esc(x.b||'?')})</option>`).join('');
    return opts?`<optgroup label="${esc(root.id)}${root.road?' - '+esc(root.road):''}">${opts}</optgroup>`:'';
   }).join('')}</select></label>
   <label>Road Type<input id="wm_rt" list="dl_rt" value="${esc(row.rt||'')}"><datalist id="dl_rt">${growList(['Main','Secondary','Lane','Internal'],r=>r.rt).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
@@ -1088,14 +1125,14 @@ async function saveRoadSegment(btn){
  await withSpinner(btn,edit>=0?'Updating...':'Saving...',async()=>{
  if(edit>=0){
   const id=D.road[edit].id;
-  const rowOut={id,a:ra._id,b:rb._id,parent,zone,road,kmm:'Manual',so:'',eo:'',len,w,me:'',rt,sf,va,ph:'',ct,_id:D.road[edit]._id};
+  const rowOut={id,a:ra.label,b:rb.label,parent,zone,road,kmm:'Manual',so:'',eo:'',len,w,me:'',rt,sf,va,ph:'',ct,a_id:ra._id,b_id:rb._id,_id:D.road[edit]._id};
   if(!await put('road',rowOut))return;
   await relabelNewEndpoints_(id,ra,rb);
   edit=-1;render();toast('Road segment updated');
   return;
  }
  const cols=SH.road.c,headers=cols.map(c=>c.l);
- const values=['',ra._id,rb._id,parent,zone,road,'Manual','','',len,w,'',rt,sf,va,'',ct];
+ const values=['',ra.label,rb.label,parent,zone,road,'Manual','','',len,w,'',rt,sf,va,'',ct,ra._id,rb._id];
  const rowId=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  let res;
  try{res=await gs('createSegment',parent,ME.username,headers,values,rowId)}
@@ -1239,13 +1276,13 @@ function completenessStatusHTML(rootId){
 // parent uses the real walking-order sequence where the branch point was
 // actually placed; falls back to even spacing only when that is unknown.
 function branchPositionOnParent(parentSeg,childSeg){
- if(childSeg.a===parentSeg.a)return 0;
- if(childSeg.a===parentSeg.b)return 1;
+ if(childSeg.a_id===parentSeg.a_id)return 0;
+ if(childSeg.a_id===parentSeg.b_id)return 1;
  const sk=D.sketch.find(s=>s.id===parentSeg.id);
  if(sk){
   try{
    const combined=[...JSON.parse(sk.seql||'[]'),...JSON.parse(sk.seqr||'[]')];
-   const idx=combined.findIndex(it=>it.t==='__intersection__'&&it.pt===childSeg.a);
+   const idx=combined.findIndex(it=>it.t==='__intersection__'&&it.pt===childSeg.a_id);
    if(idx>=0)return(idx+1)/(combined.length+1);
   }catch(e){}
  }
@@ -1268,8 +1305,8 @@ function drawColonyBranch(seg,x1,y1,angleDeg,lengthPx,depth,svg,maxDepth,canvasW
  svg.labels.push(`<text x="${x2.toFixed(1)}" y="${labelY.toFixed(1)}" font-size="${Math.max(7,10-depth)}" font-weight="700" fill="#1a2420" text-anchor="middle">${esc(seg.id)}</text>`);
  if(premTxt)svg.labels.push(`<text x="${x2.toFixed(1)}" y="${(labelY+(labelUp?-10:10)).toFixed(1)}" font-size="7" fill="#5c6b63" text-anchor="middle">${esc(premTxt)}</text>`);
  if(depth===0){
-  svg.labels.push(`<circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="6" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${x1.toFixed(1)}" y="${(y1+22).toFixed(1)}" font-size="10" font-weight="700" fill="#0f4c81" text-anchor="middle">${esc(seg.a?pointLabelById(seg.a):'A')}</text>`);
-  svg.labels.push(`<circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="6" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${x2.toFixed(1)}" y="${(y2+22).toFixed(1)}" font-size="10" font-weight="700" fill="#0f4c81" text-anchor="middle">${esc(seg.b?pointLabelById(seg.b):'B')}</text>`);
+  svg.labels.push(`<circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="6" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${x1.toFixed(1)}" y="${(y1+22).toFixed(1)}" font-size="10" font-weight="700" fill="#0f4c81" text-anchor="middle">${esc(seg.a||'A')}</text>`);
+  svg.labels.push(`<circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="6" fill="#fff" stroke="#0f4c81" stroke-width="2.5"/><text x="${x2.toFixed(1)}" y="${(y2+22).toFixed(1)}" font-size="10" font-weight="700" fill="#0f4c81" text-anchor="middle">${esc(seg.b||'B')}</text>`);
  }
  if(depth>=maxDepth)return;
  const children=D.road.filter(c=>c.parent===seg.id);
@@ -1330,7 +1367,7 @@ function segmentReportCard(){
 }
 function fieldRows(cols,row){
  return cols.filter(c=>c.t!=='hid').map(c=>{
-  const v=(c.k==='a'||c.k==='b')&&row[c.k]?pointLabelById(row[c.k]):row[c.k];
+  const v=row[c.k];
   return `<tr><td style="color:var(--mut);padding:2px 10px 2px 0;white-space:nowrap">${c.l}</td><td>${esc(v)}</td></tr>`;
  }).join('');
 }
@@ -1387,7 +1424,7 @@ function networkRow(seg){
  const prem=D.prem.find(p=>p.id===seg.id)||{},drain=D.drain.find(p=>p.id===seg.id)||{},coll=D.coll.find(p=>p.id===seg.id)||{},sk=D.sketch.find(p=>p.id===seg.id)||{};
  const cols=networkCols();
  let row=[];
- row=row.concat(cols[0][1].map(c=>(c.k==='a'||c.k==='b')&&seg[c.k]?pointLabelById(seg[c.k]):(seg[c.k]??'')));
+ row=row.concat(cols[0][1].map(c=>seg[c.k]??''));
  row=row.concat(cols[1][1].map(c=>prem[c.k]??''));
  row=row.concat(cols[2][1].map(c=>drain[c.k]??''));
  row=row.concat(cols[3][1].map(c=>coll[c.k]??''));
