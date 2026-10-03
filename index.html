@@ -1011,15 +1011,32 @@ async function addIntersectionPoint(btn){
   if(!r||!r.ok){if(r&&r.denied)blockedToast('points');else{toast('Could not tag this point')}return}
   const p={label:r.label,lat:r.lat,lng:r.lng,note:r.note,created_by:ME.username,ts:new Date().toISOString(),parent:'',_id:r.id};
   D.points.push(p);
-  SESSION_INT.push({label:r.label,note:r.note,_id:r.id});
+  let newSegId='';
   if(LAST_SEGMENT&&D.road.some(x=>x.id===LAST_SEGMENT)){
    p.parent=LAST_SEGMENT;
    const root=familyRootId(LAST_SEGMENT);
    const[newLabel]=nextFamilyLetters(root,1,[p._id]);
    await relabelPoint(p,newLabel);
+   // Tagging an intersection makes it a real road immediately - Point A set
+   // here and now, Point B filled in whenever that side road actually gets
+   // walked (reuses the same "finish Point B later" flow any pending
+   // segment already has; walking THAT road later can tag ITS OWN
+   // intersections the same way, to any depth).
+   if(!canEdit('road')){toast('Tagged '+p.label+(r.note?': '+r.note:'')+' - linked to '+LAST_SEGMENT+' (no permission to also create its own road record)');render();return}
+   const cols=SH.road.c,headers=cols.map(c=>c.l);
+   const values=['',p.label,'',LAST_SEGMENT,'','','Manual','','','','','','','','','','' ,p._id,''];
+   const rowId=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+   let res;
+   try{res=await gs('createSegment',LAST_SEGMENT,ME.username,headers,values,rowId)}catch(e){res=null}
+   if(res&&res.ok){
+    newSegId=res.id;
+    const row={};cols.forEach((c,i)=>row[c.k]=values[i]);row.id=newSegId;row._id=rowId;
+    D.road.push(row);
+   }
   }
+  SESSION_INT.push({label:p.label,note:r.note,_id:r.id,seg:newSegId});
   render();
-  toast('Tagged '+p.label+(r.note?': '+r.note:'')+(p.parent?' - linked to '+p.parent:''));
+  toast(newSegId?('Tagged '+p.label+(r.note?': '+r.note:'')+' - now '+newSegId+' (finish Point B when you reach it)'):('Tagged '+p.label+(r.note?': '+r.note:'')+(p.parent?' - linked to '+p.parent:'')));
  });
 }
 // A point's bare label means nothing on its own - what matters is which
@@ -1128,6 +1145,7 @@ async function saveRoadSegment(btn){
   const rowOut={id,a:ra.label,b:rb.label,parent,zone,road,kmm:'Manual',so:'',eo:'',len,w,me:'',rt,sf,va,ph:'',ct,a_id:ra._id,b_id:rb._id,_id:D.road[edit]._id};
   if(!await put('road',rowOut))return;
   await relabelNewEndpoints_(id,ra,rb);
+  LAST_SEGMENT=id;
   edit=-1;render();toast('Road segment updated');
   return;
  }
@@ -1519,7 +1537,16 @@ function render(){
   return;
  }
  $('#main').innerHTML=view;
- if(tab==='road'&&canEdit('road')){pointPickChange('ra');pointPickChange('rb')}
+ if(tab==='road'&&canEdit('road')){
+  pointPickChange('ra');pointPickChange('rb');
+  // the "selected" HTML attribute on an <optgroup>-nested <option> isn't
+  // always honoured the moment a big block of innerHTML is inserted in one
+  // go - set it explicitly so "Branch of" reliably shows the real value
+  // (critical: losing this on an edit silently detaches a branch from its
+  // family).
+  const parentSel=$('#wm_parent');
+  if(parentSel)parentSel.value=(edit>=0&&D.road[edit])?(D.road[edit].parent||''):parentSel.value;
+ }
  if(['prem','drain','coll','sketch'].includes(tab)&&edit<0&&$('#f_id')&&$('#f_id').value)refreshAuto(tab);
 }
 
