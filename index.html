@@ -1057,11 +1057,13 @@ async function tagAndCreateRoad_(parentId,note,lat,lng){
  return{p,newSegId};
 }
 async function addIntersectionPoint(btn){
+ if(TAGGING_IN_PROGRESS)return;
  if(!canEdit('points')){blockedToast('points');return}
  const note=$('#wi_note').value.trim(),lat=$('#wi_lat').value,lng=$('#wi_lng').value;
  if(lat===''||lng===''){toast('Enter or capture latitude/longitude first');return}
+ TAGGING_IN_PROGRESS=true;
  SAVING_DEPTH++;
- try{await addIntersectionPoint_(btn,note,lat,lng)}finally{SAVING_DEPTH--}
+ try{await addIntersectionPoint_(btn,note,lat,lng)}finally{SAVING_DEPTH--;TAGGING_IN_PROGRESS=false}
 }
 async function addIntersectionPoint_(btn,note,lat,lng){
  await withSpinner(btn,'Tagging...',async()=>{
@@ -1077,10 +1079,13 @@ async function addIntersectionPoint_(btn,note,lat,lng){
 // One simple "tag a point" form drives three different actions depending
 // on context - starting a brand new main road, tagging a junction along the
 // active one, or finishing the active one's own Point B.
+let TAGGING_IN_PROGRESS=false;
 async function tagPointAction(mode,btn){
+ if(TAGGING_IN_PROGRESS)return;
  if(!canEdit('points')){blockedToast('points');return}
  const note=$('#wi_note').value.trim(),lat=$('#wi_lat').value,lng=$('#wi_lng').value;
  if(lat===''||lng===''){toast('Enter or capture latitude/longitude first');return}
+ TAGGING_IN_PROGRESS=true;
  SAVING_DEPTH++;
  try{
   await withSpinner(btn,'Tagging...',async()=>{
@@ -1092,7 +1097,7 @@ async function tagPointAction(mode,btn){
    render();
    toast(result.newSegId?('Tagged '+result.p.label+' - now '+result.newSegId):('Tagged '+result.p.label));
   });
- }finally{SAVING_DEPTH--}
+ }finally{SAVING_DEPTH--;TAGGING_IN_PROGRESS=false}
 }
 async function finishPointB_(note,lat,lng){
  const seg=D.road.find(x=>x.id===LAST_SEGMENT);
