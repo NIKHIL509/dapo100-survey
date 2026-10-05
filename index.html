@@ -567,7 +567,7 @@ function sheetView(k){
  if(k==='road')return unifiedRoadFlow()+continueCard()+roadTable();
  const s=SH[k],row=edit>=0?D[k][edit]:{},cols=s.c.filter(c=>c.t!=='hid');
  const onchAttr=` onchange="onCh('${k}')"`;
- let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>${k==='prem'?'<p id="fs2note" class="hint" style="font-weight:600"></p>':''}${k==='sketch'?'<p id="fs5note" class="hint" style="font-weight:600"></p>':''}
+ let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>${k==='prem'?'<p id="fs2note" class="hint" style="font-weight:600;white-space:pre-line"></p>':''}${k==='sketch'?'<p id="fs5note" class="hint" style="font-weight:600"></p>':''}
   <div class="grid" oninput="onIn('${k}')"${onchAttr}>${cols.map(c=>`<label class="${c.t==='x'?'wide':''}">${c.l}${input(c,row[c.k])}</label>`).join('')}</div>
   <div class="row"><button class="btn" onclick="add('${k}',this)">${edit>=0?'Update row':'Save row'}</button>${edit>=0?`<button class="btn g" onclick="cancelEdit('${k}')">Cancel edit</button>`:`<button class="btn g" onclick="clearForm('${k}')">Clear</button>`}${k==='sketch'?`<button type="button" class="btn g" onclick="genSketch()">Auto-generate sketch</button><button type="button" class="btn g" onclick="showIllustration()">Build illustration</button>`:''}</div>
   ${k==='sketch'?`<div id="illuswrap" style="margin-top:12px"></div><div class="row" style="margin-top:8px"><button type="button" class="btn g" onclick="downloadIllustration('pdf',this)">Download PDF</button><button type="button" class="btn g" onclick="downloadIllustration('jpg',this)">Download JPEG</button></div>`:''}</div>`;
@@ -937,18 +937,20 @@ function buildColonyReport(rootId,withIll){
  // FS2 (stored FS2 rows; flagged if FS5 has changed since)
  const fs2cols=[0,1,2,3,4,6,8,9,10,11,12,13,14];
  const stale=new Set();
- const fs2rows=segs.map(s=>{const p=prem(s.id);if(!p)return rptNA(s,14,'FS2');
+ const fs2rows=segs.map(s=>{const p=prem(s.id);if(!p)return rptNA(s,15,'FS2');
   const d=deriveFS2(s.id);if(d&&PREM.some((_,i)=>num(p['p'+i])!==num(d['p'+i])))stale.add(s.id);
-  return `<tr>${rptSidCell(s).replace('</td>',stale.has(s.id)?' *</td>':'</td>')}${fs2cols.map(i=>`<td>${rptE(p['p'+i])}</td>`).join('')}<td class="tot">${rptE(p.tot)}</td></tr>`});
+  return `<tr>${rptSidCell(s).replace('</td>',stale.has(s.id)?' *</td>':'</td>')}${fs2cols.map(i=>`<td>${rptE(p['p'+i])}</td>`).join('')}<td class="tot">${rptE(p.tot)}</td><td class="sm bd">${rptE(fs2BreakdownText(fs2Breakdown(seqItemsOf(s.id)||[])))}</td></tr>`});
+ const allItems=segs.reduce((a,s)=>a.concat(seqItemsOf(s.id)||[]),[]);
  const sumP=i=>segs.reduce((s,r)=>{const p=prem(r.id);return s+(p?num(p['p'+i]):0)},0);
  rptSheetPages(ctx,{sec:'FS2 - Service-Unit Count',title:'FIELD SHEET 2 - SERVICE-UNIT COUNT',sub:sub('Count all premises served along the same segment - both sides'),
-  widths:[8,6,6,6,7,7,7,7,7,6.5,8,6,7,6,5.5],
-  head:rptHead(['Seg ID','Houses','Shops','Rest./ Dhaba','Hotel/ Homestay','Commercial Complex','Units in Complex','School/ College','Hospital/ Clinic','Govt Office','Religious/ Community','Market','Garage/ Workshop','Other','Total']),
+  widths:[8,5,5,5,6,6.5,6,6,6,5.5,7,5,6,5,5,13],
+  head:rptHead(['Seg ID','Houses','Shops','Rest./ Dhaba','Hotel/ Homestay','Commercial Complex','Units in Complex','School/ College','Hospital/ Clinic','Govt Office','Religious/ Community','Market','Garage/ Workshop','Other','Total','Breakdown (named types)']),
   rows:fs2rows,
-  total:`<tr class="tr"><td class="sid">Total</td>${fs2cols.map(i=>`<td>${sumP(i)}</td>`).join('')}<td class="tot">${f1(totPrem)}</td></tr>`,
+  total:`<tr class="tr"><td class="sid">Total</td>${fs2cols.map(i=>`<td>${sumP(i)}</td>`).join('')}<td class="tot">${f1(totPrem)}</td><td class="sm bd">${rptE(fs2BreakdownText(fs2Breakdown(allItems)))}</td></tr>`,
   notes:['<b>Commercial Complex</b> = number of complexes; <b>Units in Complex</b> = units inside them (not also counted as shops). The Total counts the units, not the complexes.',
    sumP(4)?'<b>Complexes in this colony:</b> '+sumP(4)+' complex(es), '+sumP(5)+' floors in all'+(sumP(7)?', '+sumP(7)+' floor(s) under construction':'')+'.':'',
    stale.size?'<b>* FS2 out of date:</b> FS5 was changed after this FS2 row was saved ('+[...stale].join(', ')+'). Open FS2 and press Save row to refresh.':'',
+   '<b>Breakdown</b> lists the named premise types counted inside a column, e.g. Other 9: House + Shop - 5, Ticket Counter - 2, Nursery - 2. It is worked out from the FS5 walking order.',
    '<b>Source:</b> filled automatically from the FS5 walking order (both sides added together).']
  }).forEach(p=>pages.push(p));
  // FS3
@@ -1055,7 +1057,7 @@ body{font-family:Arial,Helvetica,sans-serif;color:#1a2420;background:#d8dbd8}
 .st td.ok,.ok{color:#1b7f5f;font-weight:700;text-align:center}.st td.no,.no{color:#b4302a;font-weight:700;text-align:center}
 .st td:last-child.ok,.st td:last-child.no{text-align:left}
 .st td.sl{text-align:center;color:#5c6b63;white-space:nowrap}
-.st td.c{text-align:center}.st td.sm{font-size:6.6pt}.st th.lr{font-size:6.2pt;padding:2px 1px}
+.st td.bd{white-space:pre-line}.st td.c{text-align:center}.st td.sm{font-size:6.6pt}.st th.lr{font-size:6.2pt;padding:2px 1px}
 .st.compact th{font-size:6.2pt;padding:2.5px 2px}.st.compact td{font-size:6.7pt;padding:2px 3px;line-height:1.2}
 .st.tight th{font-size:5.8pt;padding:1.5px 1px}.st.tight td{font-size:6pt;padding:1px 2px;line-height:1.1}
 .nts{margin-top:3px}.nts p{font-size:7pt;color:#3d4a43;line-height:1.45;margin-bottom:2px}
@@ -1415,11 +1417,30 @@ function fs5Note(){
  el.textContent=parts.join(' ');
 }
 function fs2Total(d){return PREM.reduce((s,_,i)=>FS2_NOTOTAL.has(i)?s:s+num(d['p'+i]),0)}
+// Which named items make up each FS2 count that is fed by a custom premise type
+// (e.g. Other 9 = House + Shop 5, Ticket Counter 2, Nursery 2). Uses exactly the
+// same rules as deriveFS2, so every breakdown adds up to its FS2 column. Display only.
+function fs2Breakdown(items){
+ const out={};const col=name=>{const i=PREM.indexOf(name);return i<0?14:i};
+ const add=(i,name)=>{(out[i]=out[i]||{})[name]=(out[i][name]||0)+1};
+ (items||[]).forEach(it=>{const t=it.t;
+  if(['Households','Standalone Shops','Restaurant/Dhaba','Commercial Complex','GVP / Dump Point','__intersection__'].includes(t)||/burning/i.test(t||''))return;
+  if(t==='Institutions'){const i=col(it.k||'Other');if(i===14)add(14,'Institution (other kind)');return}
+  const pt=(D.ptypes||[]).find(x=>x.name===t);add(col(pt&&pt.fs2),t);
+ });
+ return out; // {columnIndex:{name:count}}
+}
+function fs2BreakdownText(bd){
+ return Object.keys(bd).map(Number).sort((a,b)=>a===14?-1:b===14?1:a-b).map(i=>{const e=Object.entries(bd[i]).sort((a,b)=>b[1]-a[1]);
+  return PREM[i]+' '+e.reduce((s,x)=>s+x[1],0)+': '+e.map(([n,c])=>n+' - '+c).join(', ')}).join('\n');
+}
 function fs2Note(){
  const el=document.getElementById('fs2note');if(!el)return;
  const id=fv('f_id');
  if(!id){el.textContent='';return}
  el.textContent=deriveFS2(id)?'Filled from this segment\'s FS5 sketch (both sides added together). To change a count, correct it in FS5, then press Save row here.':'No FS5 sketch has been saved for this segment yet - complete FS5 first and the counts will appear here.';
+ const bd=deriveFS2(id)?fs2Breakdown(seqItemsOf(id)):{};
+ if(Object.keys(bd).length)el.textContent+='\nBreakdown:\n'+fs2BreakdownText(bd);
 }
 
 /* ======================================================================
