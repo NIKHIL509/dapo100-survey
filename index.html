@@ -97,7 +97,6 @@ coll:{n:'FS4 Access Hotspots',t:'FS4 - Collection Access & Waste Hotspots',perm:
 sketch:{n:'FS5 Sketch Tally',t:'FS5 - Segment Sketch & Premises Tally',perm:'fs5',h:'Pick a Segment ID already entered in FS1 - Zone, Road and Points fill in on their own. Add each building below in the order you walk from Point A to Point B; the tallies and the sketch build themselves.',c:[
  C('id','Segment ID','segsel'),C('zone','Zone/Colony','auto'),C('road','Road','auto'),C('a','Point A','auto'),C('b','Point B','auto'),C('team','Team'),
  ...TALLY.flatMap((t,i)=>[C('l'+i,t+' LEFT','auto'),C('r'+i,t+' RIGHT','auto'),C('t'+i,t+' TOTAL','auto')]),
- C('cxun','Complex Units (total)','auto'),C('cxfl','Complex Floors (total)','auto'),C('cxuc','Complex Floors UC (total)','auto'),
  C('sk','Road Sketch (text)','x'),C('nt','Notes','x'),C('seql','Sequence Left (json)','hid'),C('seqr','Sequence Right (json)','hid')]},
 daily:{n:'FS6 Daily Control',t:'FS6 - Daily Team & Route Control',perm:'admin',h:'Supervisor check to prevent duplicate or missed segments.',c:[
  C('dt','Date','d'),C('tm','Team'),C('zn','Zone'),C('ss','Start Seg.'),C('es','End Seg.'),C('ns','No. Segments','n'),C('km','Approx km','n'),
@@ -254,12 +253,13 @@ function autos(k,r){
   r.bp=items.filter(it=>/burning/i.test(it.t||'')).length;
  }
  return r}
-// Maps a custom type's fs2 target to the TALLY row index that represents it.
-// 'Houses'→0(Households), 'Shops'→1, 'Rest./ Dhaba'→2, institution targets→4(Institutions)
-// Hotel/Homestay, Market, Garage/Workshop have no built-in TALLY row → return -1
+// Maps a custom type's "Counts in FS2 as" target to the FS5 tally row that shows it.
+// Houses->Households, Shops->Standalone Shops, Rest./Dhaba->Restaurant/Dhaba,
+// institution kinds->Institutions. Hotel/Homestay, Market, Garage/Workshop and
+// Other have no FS5 row: they are listed under the tally instead (fs5Note).
 const FS2_TO_TALLY={
  'Houses':0,'Shops':1,'Rest./ Dhaba':2,
- 'School/ College':4,'Hospital/ Clinic':4,'Govt Office':4,'Religious/ Community':4,'Other':4
+ 'School/ College':4,'Hospital/ Clinic':4,'Govt Office':4,'Religious/ Community':4
 };
 function recalcSketch(r){
  const rd=D.road.find(x=>x.id===r.id);
@@ -268,7 +268,6 @@ function recalcSketch(r){
  TALLY.forEach((label,i)=>{r['l'+i]=SEQ.l.filter(it=>it.t===label).length;r['r'+i]=SEQ.r.filter(it=>it.t===label).length;r['t'+i]=r['l'+i]+r['r'+i]});
  // fold custom types into matching tally row by their fs2 mapping
  const builtIn=new Set(TALLY);
- const builtInSpecial=new Set(['__intersection__','GVP / Dump Point','Commercial Complex','Institutions']);
  [['l',SEQ.l],['r',SEQ.r]].forEach(([side,seq])=>{
   seq.forEach(it=>{
    if(builtIn.has(it.t)||it.t==='__intersection__')return;
@@ -278,11 +277,6 @@ function recalcSketch(r){
    if(ti!=null){r[side+ti]=(r[side+ti]||0)+1;r['t'+ti]=(r['l'+ti]||0)+(r['r'+ti]||0)}
   });
  });
- // Commercial Complex units/floors/UC totals (feeds into FS2 total explanation)
- const allItems=[...SEQ.l,...SEQ.r];
- r.cxun=allItems.filter(it=>it.t==='Commercial Complex').reduce((s,it)=>s+num(it.un),0);
- r.cxfl=allItems.filter(it=>it.t==='Commercial Complex').reduce((s,it)=>s+num(it.fl),0);
- r.cxuc=allItems.filter(it=>it.t==='Commercial Complex').reduce((s,it)=>s+num(it.uc),0);
  r.seql=JSON.stringify(SEQ.l);r.seqr=JSON.stringify(SEQ.r);
  return r}
 
@@ -310,7 +304,7 @@ function input(c,v){
  if(c.t==='d')return `<input id="${id}" type="date" value="${val||(edit<0?new Date().toISOString().slice(0,10):'')}">`;
  return `<input id="${id}" value="${val}">`}
 function readForm(k){const r={};SH[k].c.forEach(c=>{if(c.t!=='auto'&&c.t!=='hid'){const e=$('#f_'+c.k);r[c.k]=e?e.value.trim():''}});return autos(k,r)}
-function refreshAuto(k){const r=autos(k,readForm(k));SH[k].c.forEach(c=>{if(c.t==='auto'){const e=$('#f_'+c.k);if(e)e.value=r[c.k]}});if(k==='prem')fs2Note()}
+function refreshAuto(k){const r=autos(k,readForm(k));SH[k].c.forEach(c=>{if(c.t==='auto'){const e=$('#f_'+c.k);if(e)e.value=r[c.k]}});if(k==='prem')fs2Note();if(k==='sketch')fs5Note()}
 function onIn(k){refreshAuto(k)}
 function onCh(k){
  if(k==='sketch'){const idEl=$('#f_id');if(idEl){/* segsel already resets via its own onchange */}}
@@ -573,7 +567,7 @@ function sheetView(k){
  if(k==='road')return unifiedRoadFlow()+continueCard()+roadTable();
  const s=SH[k],row=edit>=0?D[k][edit]:{},cols=s.c.filter(c=>c.t!=='hid');
  const onchAttr=` onchange="onCh('${k}')"`;
- let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>${k==='prem'?'<p id="fs2note" class="hint" style="font-weight:600"></p>':''}
+ let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>${k==='prem'?'<p id="fs2note" class="hint" style="font-weight:600"></p>':''}${k==='sketch'?'<p id="fs5note" class="hint" style="font-weight:600"></p>':''}
   <div class="grid" oninput="onIn('${k}')"${onchAttr}>${cols.map(c=>`<label class="${c.t==='x'?'wide':''}">${c.l}${input(c,row[c.k])}</label>`).join('')}</div>
   <div class="row"><button class="btn" onclick="add('${k}',this)">${edit>=0?'Update row':'Save row'}</button>${edit>=0?`<button class="btn g" onclick="cancelEdit('${k}')">Cancel edit</button>`:`<button class="btn g" onclick="clearForm('${k}')">Clear</button>`}${k==='sketch'?`<button type="button" class="btn g" onclick="genSketch()">Auto-generate sketch</button><button type="button" class="btn g" onclick="showIllustration()">Build illustration</button>`:''}</div>
   ${k==='sketch'?`<div id="illuswrap" style="margin-top:12px"></div><div class="row" style="margin-top:8px"><button type="button" class="btn g" onclick="downloadIllustration('pdf',this)">Download PDF</button><button type="button" class="btn g" onclick="downloadIllustration('jpg',this)">Download JPEG</button></div>`:''}</div>`;
@@ -799,11 +793,12 @@ let COLONY_RPT_SEG='';
 function colonyReportView(){
  const opts=familyRoots().map(x=>`<option value="${esc(x.id)}" ${x.id===COLONY_RPT_SEG?'selected':''}>${esc(x.id)}${x.road?' – '+esc(x.road):''}</option>`).join('');
  return `<div class="card"><h2>Colony PDF Report</h2>
- <p class="hint">Select a main road (colony). The report opens in a new tab — view it there and use the Download PDF button or your browser's Print → Save as PDF. All sheets (FS1–FS6), A4 landscape.</p>
+ <p class="hint">Select a main road (colony). The report opens in a new tab — view it there and use the Download PDF button or your browser's Print → Save as PDF. Laid out like the printed field sheets FS1-FS6, A4 landscape.</p>
  <div class="row">
   <select id="colRptPick" onchange="COLONY_RPT_SEG=this.value"><option value="">Select a colony...</option>${opts}</select>
   <button type="button" class="btn" onclick="openColonyReport()">View / Download Report</button>
- </div></div>`;
+ </div>
+ <label style="display:flex;flex-direction:row;align-items:center;gap:6px;margin-top:8px;font-size:13px"><input type="checkbox" id="colRptIll" style="width:auto" checked> Include the colony map and road illustrations (one page per road)</label></div>`;
 }
 function colonyReportSegments(rootId){
  const collect=(id,seen)=>{seen=seen||new Set();if(seen.has(id))return[];seen=new Set(seen);seen.add(id);
@@ -812,358 +807,272 @@ function colonyReportSegments(rootId){
  return collect(rootId);
 }
 function rptE(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function rptCell(v){return `<td>${rptE(v??'')}</td>`}
-function rptTh(v,rs,cs){const r=rs?` rowspan="${rs}"`:'',c=cs?` colspan="${cs}"`:'';return `<th${r}${c}>${rptE(v)}</th>`}
-function rptGrpTh(v,cs){return `<th colspan="${cs}" class="gh">${rptE(v)}</th>`}
-function rptSubTh(v){return `<th class="sub">${rptE(v)}</th>`}
-function rptBranchClass(seg){return seg.parent?'br':'sid'}
-function rptCompletenessPage(segs,rootSeg,logoSrc,now){
- const rows=segs.map(seg=>{
-  const hasPrem=D.prem.some(x=>x.id===seg.id),hasDrain=D.drain.some(x=>x.id===seg.id),
-        hasColl=D.coll.some(x=>x.id===seg.id),hasSketch=D.sketch.some(x=>x.id===seg.id);
-  const tick=ok=>`<td class="${ok?'ok':'miss'}">${ok?'✓':'✗'}</td>`;
-  const miss=[!hasPrem&&'FS2',!hasDrain&&'FS3',!hasColl&&'FS4',!hasSketch&&'FS5'].filter(Boolean);
-  return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:14px"':''}><b>${rptE(seg.id)}</b></td>
-   <td>${rptE(seg.road||'')}</td><td>${rptE(seg.zone||'')}</td><td>${rptE(seg.parent||'—')}</td>
-   <td class="ok">✓</td>${tick(hasPrem)}${tick(hasDrain)}${tick(hasColl)}${tick(hasSketch)}
-   <td class="${miss.length?'miss':'ok'}">${miss.length?miss.join(', '):'All complete'}</td></tr>`;
- }).join('');
- // FS1 table
- const fs1rows=segs.map(seg=>`<tr>
-  <td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td>
-  ${['a','b','parent','zone','road','kmm','so','eo','len','w','me','rt','sf','va','ph','ct','slat','slng','elat','elng','er'].map(k=>rptCell(seg[k])).join('')}
- </tr>`).join('');
- return `<div class="page">
-  ${rptPageHeader(rootSeg,logoSrc,'Completeness &amp; FS1 – Road Segments','All segments · A4 Landscape',2,now)}
-  <div class="sh">Completeness Summary</div>
-  <table class="st"><tr>${rptTh('Seg ID',2)}${rptTh('Road',2)}${rptTh('Zone',2)}${rptTh('Branch of',2)}${rptTh('FS1',2)}${rptTh('FS2',2)}${rptTh('FS3',2)}${rptTh('FS4',2)}${rptTh('FS5',2)}${rptTh('Missing / Notes',2)}</tr>${rows}</table>
-  <div class="sh">FS1 – Road Segments</div>
-  <div class="ow"><table class="st"><tr>
-   ${rptTh('Seg ID',2)}${rptTh('Point A',2)}${rptTh('Point B',2)}${rptTh('Branch of',2)}${rptTh('Zone',2)}${rptTh('Road',2)}
-   ${rptGrpTh('Measurement',5)}${rptGrpTh('Character',3)}
-   ${rptTh('Vehicle Access',2)}${rptTh('M/E',2)}${rptTh('Photo',2)}${rptTh('Leads to',2)}${rptTh('Start lat',2)}${rptTh('Start lng',2)}${rptTh('End lat',2)}${rptTh('End lng',2)}${rptTh('End reached',2)}
-  </tr><tr>
-   ${rptSubTh('Km Method')}${rptSubTh('Start Odo')}${rptSubTh('End Odo')}${rptSubTh('Length km')}${rptSubTh('Width m')}
-   ${rptSubTh('Type')}${rptSubTh('Surface')}${rptSubTh('Condition')}
-  </tr>${fs1rows}</table></div>
-  ${rptPageFooter(rootSeg,2)}
- </div>`;
+/* ---- report helpers (layout follows the printed field sheets) ---- */
+const RPT_ROWS=20; // rows per A4 landscape page (one page per sheet for most colonies); bigger colonies continue on the next page
+function rptChunk(a,n){const o=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o.length?o:[[]]}
+function rptBlank(v){return v===''||v==null}
+function rptLR(a,b){a=rptBlank(a)?'':String(a).trim();b=rptBlank(b)?'':String(b).trim();if(!a&&!b)return '';if(!b||a===b)return a;if(!a)return b;return 'L: '+a+' / R: '+b}
+function rptGPS(lat,lng){return rptBlank(lat)&&rptBlank(lng)?'':(rptBlank(lat)?'-':lat)+', '+(rptBlank(lng)?'-':lng)}
+function rptDate(v){if(rptBlank(v))return '';const s=String(v);if(/^\d{4}-\d{2}-\d{2}/.test(s)){const d=new Date(s);if(!isNaN(d))return d.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'2-digit'})}return s}
+function rptSidCell(seg){return `<td class="sid${seg.parent?' br':''}">${rptE(seg.id)}</td>`}
+function rptGrid(widths,head,body){
+ return `<table class="st"><colgroup>${widths.map(w=>`<col style="width:${w}%">`).join('')}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table>`;
 }
-function rptFS2Page(segs,rootSeg,logoSrc,now){
- const rows=segs.map(seg=>{
-  const p=D.prem.find(x=>x.id===seg.id)||null;
-  if(!p)return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td><td colspan="16" class="miss">FS2 not yet entered</td></tr>`;
-  const cells=PREM.map((_,i)=>rptCell(p['p'+i])).join('');
-  const tot=`<td style="font-weight:700">${rptE(p.tot??'')}</td>`;
-  return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td>${cells}${tot}</tr>`;
- }).join('');
- const totRow=(()=>{const sums=PREM.map((_,i)=>segs.reduce((s,seg)=>{const p=D.prem.find(x=>x.id===seg.id);return s+num(p&&p['p'+i])},0));
-  const tot=segs.reduce((s,seg)=>{const p=D.prem.find(x=>x.id===seg.id);return s+num(p&&p.tot)},0);
-  return `<tr style="background:#eef2ea;font-weight:700"><td>Colony Total</td>${sums.map(v=>`<td>${v||''}</td>`).join('')}<td style="background:#d8e8cc">${tot}</td></tr>`;
- })();
- return `<div class="page">
-  ${rptPageHeader(rootSeg,logoSrc,'FS2 – Service Unit Counts','Derived from FS5 walking order · A4 Landscape',3,now)}
-  <div class="sh">FS2 – Service Unit Counts <span class="sh-tag">all columns</span></div>
-  <div class="ow"><table class="st"><tr>
-   ${rptTh('Seg ID',2)}${rptGrpTh('Residential / Commercial',4)}${rptGrpTh('Commercial Complex',4)}${rptGrpTh('Institutions',6)}${rptTh('Other',2)}${rptTh('TOTAL',2)}
-  </tr><tr>
-   ${['Houses','Shops','Rest./ Dhaba','Hotel/ Homestay','Complexes','No. Floors','Units','Floors UC','School/ College','Hospital/ Clinic','Govt Office','Relig/ Comm','Market','Garage/ Wksh'].map(rptSubTh).join('')}
-  </tr>${rows}${totRow}</table></div>
-  <p style="font-size:6pt;color:#8a9690;margin-top:4px;font-style:italic">* Total = Houses + Shops + Rest./Dhaba + Hotel/Homestay + Units in Complex + Institutions + Other. Complex count and floor counts excluded from Total.</p>
-  ${rptPageFooter(rootSeg,3)}
- </div>`;
+function rptHead(labels){return `<tr>${labels.map(l=>`<th>${l}</th>`).join('')}</tr>`}
+function rptNA(seg,span,what){return `<tr class="na">${rptSidCell(seg)}<td colspan="${span}">${what} not yet entered for this segment</td></tr>`}
+function rptNotes(lines){return `<div class="nts">${lines.filter(Boolean).map(l=>`<p>${l}</p>`).join('')}</div>`}
+// One page per chunk of rows; the last chunk carries the total row and notes.
+// Adds a serial-number column (1, 2, 3 ...) in front of every row.
+function rptNumber(rows,start){return rows.map((r,i)=>r.replace(/^<tr([^>]*)>/,`<tr$1><td class="sl">${start+i+1}</td>`))}
+function rptSlWidths(w){return [3,...w.map(x=>x*0.97)]}
+function rptSlHead(head,rows){return head.replace('<tr>',`<tr><th rowspan="${rows||1}">Sl.</th>`)}
+// One page per sheet; only very large colonies continue on a second page.
+// The last page carries the total row and the notes.
+function rptSheetPages(ctx,o){
+ const chunks=rptChunk(o.rows,RPT_ROWS);let n=0;
+ return chunks.map((ch,i)=>{
+  const last=i===chunks.length-1;
+  const body=rptNumber(ch,n).join('')+(last&&o.total?o.total.replace(/^<tr([^>]*)>/,'<tr$1><td class="sl"></td>'):'');n+=ch.length;
+  const grid=rptGrid(rptSlWidths(o.widths),rptSlHead(o.head,o.headRows),body).replace('class="st"',ch.length>12?'class="st compact"':'class="st"');
+  return {sec:o.sec,html:rptPage(ctx,{title:o.title+(i?' (continued)':''),sub:o.sub,
+   body:grid+(last?rptNotes(o.notes||[]):'<div class="nts"><p>Continued on the next page.</p></div>')})};
+ });
 }
-function rptFS3Page(segs,rootSeg,logoSrc,now){
- const rows=segs.map(seg=>{
-  const d=D.drain.find(x=>x.id===seg.id)||null;
-  if(!d)return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td><td colspan="16" class="miss">FS3 not yet entered</td></tr>`;
-  return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td>
-   ${['ld','lt','ll','lw','lc','lb','lo','rd','rt','rl','rw','rc','rb','ro','ph','rm'].map(k=>rptCell(d[k])).join('')}</tr>`;
- }).join('');
- return `<div class="page">
-  ${rptPageHeader(rootSeg,logoSrc,'FS3 – Drain / Gutter Mapping','Left/Right based on travelling A→B · A4 Landscape',4,now)}
-  <div class="sh">FS3 – Drain / Gutter Mapping <span class="sh-tag">all columns</span></div>
-  <div class="ow"><table class="st"><tr>
-   ${rptTh('Seg ID',2)}${rptGrpTh('Left Side (A → B)',7)}${rptGrpTh('Right Side (A → B)',7)}${rptTh('Photo',2)}${rptTh('Remarks',2)}
-  </tr><tr>
-   ${['Drain?','Type','Len m','Width m','Condition','Blocked?','Outfall'].map(rptSubTh).join('')}
-   ${['Drain?','Type','Len m','Width m','Condition','Blocked?','Outfall'].map(rptSubTh).join('')}
-  </tr>${rows}</table></div>
-  ${rptPageFooter(rootSeg,4)}
- </div>`;
+function rptPage(ctx,o){
+ return `<section class="page">
+ <div class="ph"><img src="${ctx.logo}" class="ph-logo" alt="">
+  <div class="ph-text"><h1>${o.title}</h1><p>${o.sub}</p></div>
+  <div class="ph-right"><span class="proj">HIMALAYAN FRINGES PROJECT | DAPORIJO CLEAN TOWN MISSION</span><b>Page %%P%% of %%T%%</b> · ${ctx.now}</div></div>
+ <div class="pb">${o.body}</div>
+ <div class="pgf"><span>Road, Drainage &amp; Service-Unit Mapping · ${rptE(ctx.label)} · Survey tool created by Vivekananda Public School, Daporijo (prototype)</span><span>Page %%P%% of %%T%%</span></div>
+ </section>`;
 }
-function rptFS4Page(segs,rootSeg,logoSrc,now){
- const rows=segs.map(seg=>{
-  const c=D.coll.find(x=>x.id===seg.id)||null;
-  if(!c)return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td><td colspan="11" class="miss">FS4 not yet entered</td></tr>`;
-  return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td>
-   ${['ex','fr','vh','cp','gv','bp','dr','ap','tc','ph','fn'].map(k=>rptCell(c[k])).join('')}</tr>`;
- }).join('');
- // KPI boxes
- const kpi=(v,lbl,warn)=>`<div style="border:1px solid #c7cdc8;border-radius:3px;padding:5px 8px;text-align:center;background:#fafcf9">
-  <div style="font-size:14pt;font-weight:700;color:${warn&&v>0?'#B4302A':'#2f3833'}">${v}</div>
-  <div style="font-size:5.5pt;color:#5c6b63">${lbl}</div></div>`;
- const allC=D.coll.filter(c=>segs.some(s=>s.id===c.id));
- const kpis=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:6px">
-  ${kpi(allC.reduce((s,c)=>s+num(c.cp),0),'Collection Points',false)}
-  ${kpi(allC.reduce((s,c)=>s+num(c.gv),0),'GVP / Dump Points',true)}
-  ${kpi(allC.reduce((s,c)=>s+num(c.bp),0),'Burning Points',true)}
-  ${kpi(allC.filter(c=>c.dr==='Yes').length,'Drain/River Dumps',true)}
-  ${kpi(allC.filter(c=>c.ap&&c.ap.trim()).length,'Access Problems',true)}
-  ${kpi(allC.filter(c=>c.ex==='Yes').length,'Segs with Collection',false)}
- </div>`;
- return `<div class="page">
-  ${rptPageHeader(rootSeg,logoSrc,'FS4 – Collection Access &amp; Waste Hotspots','GVP and Burning counts derived from FS5 · A4 Landscape',5,now)}
-  <div class="sh">FS4 – Collection Access &amp; Waste Hotspots <span class="sh-tag">all columns</span></div>
-  <div class="ow"><table class="st"><tr>
-   ${['Seg ID','Collection?','Frequency','Vehicle','Coll. Points','GVP/Dump (FS5)','Burning Pts (FS5)','Drain/River Dump?','Access Problem','Turn/Stop','Photo','Field Notes'].map(v=>rptTh(v)).join('')}
-  </tr>${rows}</table></div>${kpis}
-  ${rptPageFooter(rootSeg,5)}
- </div>`;
+/* ---- FS5 tally from the walking order itself, so it always matches FS2 ---- */
+function rptTally(L,R){
+ const rows=TALLY.map(t=>({t,l:0,r:0,inc:{},kinds:{}})),extra={};
+ const add=(side,it)=>{
+  if(it.t==='__intersection__')return;
+  let i=TALLY.indexOf(it.t),inc=null;
+  if(i<0){
+   const pt=(D.ptypes||[]).find(x=>x.name===it.t),tgt=pt&&pt.fs2?pt.fs2:'Other',ti=FS2_TO_TALLY[tgt];
+   if(ti==null){extra[it.t]=extra[it.t]||{t:it.t,tgt,l:0,r:0};extra[it.t][side]++;return}
+   i=ti;inc=it.t;
+  }
+  const row=rows[i];row[side]++;
+  if(inc)row.inc[inc]=(row.inc[inc]||0)+1;
+  if(it.t==='Institutions'){const k=it.k||'Other';row.kinds[k]=(row.kinds[k]||0)+1}
+ };
+ L.forEach(it=>add('l',it));R.forEach(it=>add('r',it));
+ const cx=[...L,...R].filter(it=>it.t==='Commercial Complex');
+ const un=cx.reduce((s,it)=>s+num(it.un),0),fl=cx.reduce((s,it)=>s+num(it.fl),0),uc=cx.reduce((s,it)=>s+num(it.uc),0);
+ const list=o=>Object.entries(o).map(([k,n])=>k+' x'+n).join(', ');
+ const out=rows.map(r=>{
+  let note=[];
+  if(Object.keys(r.inc).length)note.push('incl. '+list(r.inc));
+  if(r.t==='Commercial Complex'&&cx.length)note.push(un+' internal units · '+fl+' floors'+(uc?' ('+uc+' under construction)':''));
+  if(r.t==='Institutions'&&Object.keys(r.kinds).length)note.push(list(r.kinds));
+  return {t:r.t,l:r.l,r:r.r,note:note.join('; '),x:false};
+ });
+ Object.values(extra).forEach(e=>out.push({t:e.t,l:e.l,r:e.r,note:/burning/i.test(e.t)?'Counted in FS4 Burning Points':'Counts in FS2 as '+e.tgt,x:true}));
+ return out;
 }
-function rptFS5Pages(segs,rootSeg,logoSrc,now,totalPages){
- // 2 FS5 sheets per page, side by side
- let pages='',pageNum=6;
- for(let i=0;i<segs.length;i+=2){
-  const pair=segs.slice(i,i+2);
-  const sheets=pair.map(seg=>{
-   const sk=D.sketch.find(x=>x.id===seg.id);
-   const rd=D.road.find(x=>x.id===seg.id)||{};
-   if(!sk)return `<div class="fs5"><div class="fs5-bar">FIELD SHEET 5 – SEGMENT SKETCH &amp; PREMISES TALLY <span>HIMALAYAN FRINGES PROJECT / DAPORIJO CLEAN TOWN MISSION</span></div>
-    <div class="fs5-hdr" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
-     <div class="fs5-hc"><span class="lbl">Segment ID</span><span class="val">${rptE(seg.id)}</span></div>
-     <div class="fs5-hc"><span class="lbl">Zone</span><span class="val">${rptE(seg.zone||'')}</span></div>
-     <div class="fs5-hc"><span class="lbl">Road</span><span class="val">${rptE(seg.road||'')}</span></div>
-     <div class="fs5-hc"><span class="lbl">Point A</span><span class="val">${rptE(rd.a||'')}</span></div>
-     <div class="fs5-hc"><span class="lbl">Point B</span><span class="val">${rptE(rd.b||'')}</span></div>
-     <div class="fs5-hc"><span class="lbl">Team</span><span class="val">—</span></div>
-    </div>
-    <div style="padding:16px;text-align:center;color:#8a9690;font-size:7pt">FS5 not yet entered for this segment</div></div>`;
-   // tally rows — built-in TALLY + cxun/cxfl/cxuc
-   const tallyRows=TALLY.map((label,i)=>{
-    const lv=sk['l'+i]??0,rv=sk['r'+i]??0,tv=sk['t'+i]??0;
-    let note='';
-    if(i===3){note=`${sk.cxun||0} units · ${sk.cxfl||0} floors${sk.cxuc>0?' · '+sk.cxuc+' UC':''}`}
-    return `<tr><td class="lbl">${rptE(label)}</td><td>${lv}</td><td>${rv}</td><td class="tot">${tv}</td><td style="text-align:left;font-size:5.5pt;padding:2px 4px;color:#5c6b63">${note}</td></tr>`;
-   }).join('');
-   // custom types not in TALLY but present in sketch
-   const customRows=(()=>{
-    const builtIn=new Set(TALLY);
-    let items=[];try{items=[...JSON.parse(sk.seql||'[]'),...JSON.parse(sk.seqr||'[]')]}catch(e){}
-    const cmap={};
-    items.forEach(it=>{if(!builtIn.has(it.t)&&it.t!=='__intersection__'){const pt=(D.ptypes||[]).find(x=>x.name===it.t);const key=it.t+(pt?` → ${pt.fs2}`:'');cmap[key]=(cmap[key]||0)+1}});
-    return Object.entries(cmap).map(([k,v])=>`<tr style="background:#fff8e6"><td class="lbl" style="color:#8a6a00">${rptE(k)}</td><td colspan="2" style="color:#8a6a00">—</td><td class="tot" style="color:#8a6a00">${v}</td><td style="font-size:5.5pt;color:#8a6a00;text-align:left;padding:2px 4px">custom</td></tr>`).join('');
-   })();
-   const grandL=TALLY.reduce((s,_,i)=>s+num(sk['l'+i]),0);
-   const grandR=TALLY.reduce((s,_,i)=>s+num(sk['r'+i]),0);
-   const grandT=TALLY.reduce((s,_,i)=>s+num(sk['t'+i]),0);
-   return `<div class="fs5">
-    <div class="fs5-bar">FIELD SHEET 5 – SEGMENT SKETCH &amp; PREMISES TALLY <span>HIMALAYAN FRINGES PROJECT / DAPORIJO CLEAN TOWN MISSION</span></div>
-    <div class="fs5-hdr" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
-     <div class="fs5-hc"><span class="lbl">Segment ID</span><span class="val">${rptE(seg.id)}</span></div>
-     <div class="fs5-hc"><span class="lbl">Zone / Colony</span><span class="val">${rptE(sk.zone||rd.zone||'')}</span></div>
-     <div class="fs5-hc"><span class="lbl">Road</span><span class="val">${rptE(sk.road||rd.road||'')}</span></div>
-     <div class="fs5-hc"><span class="lbl">Point A</span><span class="val">${rptE(sk.a||rd.a||'')}</span></div>
-     <div class="fs5-hc"><span class="lbl">Point B</span><span class="val">${rptE(sk.b||rd.b||'')}</span></div>
-     <div class="fs5-hc"><span class="lbl">Team</span><span class="val">${rptE(sk.team||'')}</span></div>
-    </div>
-    <div class="fs5-body">
-     <div class="fs5-sk">
-      <div class="fs5-sk-lbl">ROAD SKETCH – mark A/B, direction, left/right, drains, premises, GVPs, collection points and access constraints <em>Not to scale</em></div>
-      <div class="fs5-rd">${rptE(sk.sk||'')}</div>
-     </div>
-     <div><table class="fst">
-      <tr><th class="th-l">Premise / Feature</th><th class="th-c">LEFT</th><th class="th-c">RIGHT</th><th class="th-c">TOTAL</th><th class="th-c" style="background:#1a2420;width:28%">Notes</th></tr>
-      ${tallyRows}${customRows}
-      <tr class="grand"><td class="lbl">TOTAL (built-in)</td><td>${grandL}</td><td>${grandR}</td><td>${grandT}</td><td></td></tr>
-     </table></div>
-    </div>
-    <div class="fs5-leg"><b>Legend:</b><span>[H] House</span><span>[SHOP] Shop</span><span>[DHABA] Restaurant</span><span>[GVP*] Dump/Burning</span><span>[COMMERCIAL COMPLEX: details]</span><span>[SCHOOL] Institution</span><span>→ Survey direction A to B</span></div>
-    <div class="fs5-nt"><div class="nl">${sk.nt?rptE(sk.nt):'Simple sketch rule: Draw one road line, mark Point A and Point B, add an arrow A→B, then place important features roughly on the correct left/right side.'}</div></div>
-   </div>`;
-  }).join('');
-  const pn=pageNum++;
-  pages+=`<div class="page">
-   ${rptPageHeader(rootSeg,logoSrc,'FS5 – Segment Sketch &amp; Premises Tally','Field-sheet format · '+(pair.map(s=>s.id).join(' &amp; '))+' · A4 Landscape',pn,now)}
-   <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">${sheets}</div>
-   ${rptPageFooter(rootSeg,pn)}
-  </div>`;
- }
- return pages;
+function rptIllPage(ctx,title,sub,svg,note){
+ const fitted=String(svg).replace(/^<svg([^>]*?) width="[^"]*" height="[^"]*"([^>]*?) style="[^"]*"/,'<svg$1 width="100%" height="100%" preserveAspectRatio="xMidYMid meet"$2');
+ return rptPage(ctx,{title,sub,body:`<div class="ill${note?' wn':''}">${fitted}</div>${note?rptNotes([rptE(note)]):''}`});
 }
-function rptFS6Page(segs,rootSeg,logoSrc,now,pageNum){
- const rows=D.daily.filter(r=>r.zn&&segs.some(s=>s.zone&&r.zn===s.zone)).map(r=>
-  `<tr>${['dt','tm','zn','ss','es','ns','km','su','ck','rv','sn'].map(k=>rptCell(r[k])).join('')}</tr>`).join('');
- return `<div class="page">
-  ${rptPageHeader(rootSeg,logoSrc,'FS6 – Daily Team &amp; Route Control','Supervisor control log · A4 Landscape',pageNum,now)}
-  <div class="sh">FS6 – Daily Team &amp; Route Control</div>
-  <table class="st"><tr>
-   ${['Date','Team','Zone','Start Seg.','End Seg.','No. Segs','Approx km','Sheets Used','Checked?','Revisit?','Supervisor Notes'].map(v=>rptTh(v)).join('')}
-  </tr>${rows||`<tr><td colspan="11" class="miss">No FS6 entries matching this colony's zone</td></tr>`}</table>
-  ${rptPageFooter(rootSeg,pageNum)}
- </div>`;
-}
-function rptIllusPage(rootSeg,logoSrc,now,pageNum,segs){
- const illCards=segs.map(seg=>`<div>
-  <div class="sh" style="margin-bottom:5px">${rptE(seg.id)} – ${rptE(seg.road||'Road Illustration')}</div>
-  <div class="illus-ph" style="min-height:60px">
-   <b>Road Illustration · ${rptE(seg.id)}${seg.road?' · '+rptE(seg.road):''}</b>
-   <p>Build in the app (FS5 → Build illustration), then download separately: A4 portrait or A3 landscape</p>
-  </div></div>`).join('');
- return `<div class="page">
-  ${rptPageHeader(rootSeg,logoSrc,'Colony Map &amp; Road Illustrations','Optional section · illustrations built and downloaded from the app · A4 Landscape',pageNum,now)}
-  <div style="display:grid;grid-template-columns:1fr 2fr;gap:9px;margin-bottom:8px">
-   <div>
-    <div class="sh" style="margin-bottom:5px">Colony Map</div>
-    <div class="col-ph" style="min-height:120px">
-     <b>Colony Map · ${rptE(rootSeg.id)}</b>
-     <p style="font-size:7pt;color:#5c6b63;margin-top:4px">Build in the app (Reports → Build colony map), then download A4 or A3</p>
-     <p style="font-size:6pt;color:#8a9690;margin-top:5px">${segs.filter(s=>s.parent).length} branch road(s)</p>
-    </div>
-   </div>
-   <div style="display:grid;grid-template-columns:${segs.length>1?'1fr 1fr':'1fr'};gap:8px">${illCards}</div>
-  </div>
-  ${rptPageFooter(rootSeg,pageNum)}
- </div>`;
-}
-function rptPageHeader(rootSeg,logoSrc,title,sub,pageNum,now){
- return `<div class="ph">
-  <img src="${logoSrc}" class="ph-logo" alt="VPS logo">
-  <div class="ph-text"><h1>${title}</h1><p>Colony: ${rptE(rootSeg.zone||'')} · ${rptE(rootSeg.id)}${rootSeg.road?' – '+rptE(rootSeg.road):''} · ${sub}</p></div>
-  <div class="ph-right"><b>Page ${pageNum}</b><br>${now}</div>
- </div>`;
-}
-function rptPageFooter(rootSeg,pageNum){
- return `<div class="pgf">
-  <span>DAPO 100 · Road, Drainage &amp; Service-Unit Mapping · Colony: ${rptE(rootSeg.zone||'')} (${rptE(rootSeg.id)}) · Vivekananda Public School (prototype)</span>
-  <span>Page ${pageNum}</span>
- </div>`;
-}
-function openColonyReport(){
- const rootId=$('#colRptPick')&&$('#colRptPick').value||COLONY_RPT_SEG;
- if(!rootId){toast('Select a colony first');return}
- const rootSeg=D.road.find(x=>x.id===rootId);
- if(!rootSeg){toast('Colony not found');return}
- const segs=colonyReportSegments(rootId);
- const now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
- const logoSrc=document.getElementById('logoimg')?document.getElementById('logoimg').src:'';
- const totalKm=segs.reduce((s,r)=>s+num(r.len),0);
- const totalPrem=D.prem.filter(p=>segs.some(s=>s.id===p.id)).reduce((s,p)=>s+num(p.tot),0);
- const teams=[...new Set(D.sketch.filter(sk=>segs.some(s=>s.id===sk.id)).map(sk=>sk.team).filter(Boolean))].join(', ');
- const fs5pages=rptFS5Pages(segs,rootSeg,logoSrc,now);
- const fs5pageCount=Math.ceil(segs.length/2);
- const fs6pageNum=6+fs5pageCount;
- const illusPageNum=fs6pageNum+1;
- const totalPages=illusPageNum;
- // Cover TOC
- const tocRows=[
-  ['1','Cover'],['2','Completeness + FS1 – Road Segments'],['3','FS2 – Service Unit Counts'],
-  ['4','FS3 – Drain / Gutter Mapping'],['5','FS4 – Access Hotspots'],
-  ...Array.from({length:fs5pageCount},(_,i)=>[String(6+i),'FS5 – Sketch & Tally'+(fs5pageCount>1?` (part ${i+1})`:'')]),
-  [String(fs6pageNum),'FS6 – Daily Control'],
-  [String(illusPageNum),'Colony Map & Illustrations'],
- ].map(([p,t])=>`<tr><td>${rptE(t)}</td><td>${p}</td></tr>`).join('');
- const coverPage=`<div class="page">
-  <div class="cov-band">
-   <h1>DAPO 100 – Colony Survey Report</h1>
-   <h2>Road, Drainage &amp; Service-Unit Mapping · ${rptE(rootSeg.zone||'')} Colony · ${rptE(rootId)}</h2>
-   <p>Himalayan Fringes Project | Daporijo Clean Town Mission | Vivekananda Public School, Daporijo</p>
-  </div>
+function buildColonyReport(rootId,withIll){
+ const root=D.road.find(x=>x.id===rootId);if(!root)return null;
+ const segs=colonyReportSegments(rootId),ids=new Set(segs.map(s=>s.id));
+ const ctx={logo:document.getElementById('logoimg')?document.getElementById('logoimg').src:'',
+  now:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+  label:(root.zone?root.zone+' · ':'')+root.id+(root.road?' – '+root.road:'')};
+ const pages=[];const push=(sec,html)=>pages.push({sec,html});
+ const sub=s=>s+' · '+rptE(ctx.label);
+ const prem=id=>D.prem.find(x=>x.id===id),drn=id=>D.drain.find(x=>x.id===id),col=id=>D.coll.find(x=>x.id===id),skt=id=>D.sketch.find(x=>x.id===id);
+ const totKm=segs.reduce((s,r)=>s+num(r.len),0);
+ const totPrem=segs.reduce((s,r)=>{const p=prem(r.id);return s+(p?num(p.tot):0)},0);
+ const teams=[...new Set(segs.map(s=>(skt(s.id)||{}).team).filter(Boolean))].join(', ');
+ // completeness rows
+ const tick=ok=>`<td class="${ok?'ok':'no'}">${ok?'✓':'✗'}</td>`;
+ const cRows=segs.map(seg=>{const m=[!prem(seg.id)&&'FS2',!drn(seg.id)&&'FS3',!col(seg.id)&&'FS4',!skt(seg.id)&&'FS5'].filter(Boolean);
+  return `<tr>${rptSidCell(seg)}<td>${rptE(seg.road||'')}</td><td>${rptE(seg.parent||'Main road')}</td>${tick(true)}${tick(!!prem(seg.id))}${tick(!!drn(seg.id))}${tick(!!col(seg.id))}${tick(!!skt(seg.id))}<td class="${m.length?'no':'ok'}">${m.length?'Missing '+m.join(', '):'All sheets complete'}</td></tr>`});
+ const cW=[13,20,13,6,6,6,6,6,24],cH=rptHead(['Seg ID','Road','Branch of','FS1','FS2','FS3','FS4','FS5','Status']);
+ const incomplete=segs.filter(seg=>!prem(seg.id)||!drn(seg.id)||!col(seg.id)||!skt(seg.id)).length;
+ const COVER_ROWS=9,cFirst=cRows.slice(0,COVER_ROWS),cRest=rptChunk(cRows.slice(COVER_ROWS),RPT_ROWS+4);
+ // cover (contents filled in at the end, once page numbers are known)
+ push('cover',`<section class="page">
+  <div class="ph"><img src="${ctx.logo}" class="ph-logo" alt=""><div class="ph-text"><h1>Vivekananda Public School, Daporijo</h1><p>CBSE Affiliation No. 2230086 · School Code 35085 · Upper Subansiri District, Arunachal Pradesh</p></div>
+   <div class="ph-right"><span class="proj">HIMALAYAN FRINGES PROJECT | DAPORIJO CLEAN TOWN MISSION</span><b>Page %%P%% of %%T%%</b> · ${ctx.now}</div></div>
+  <div class="pb">
+  <div class="cov-band"><h1>DAPO 100 - ROAD &amp; SERVICE-UNIT MAPPING</h1><h2>Colony Survey Report · ${rptE(root.zone||'')} · ${rptE(root.id)}${root.road?' – '+rptE(root.road):''}</h2></div>
   <div class="cov-cols">
    <div class="cov-box"><h3>Colony</h3>
-    <p><span class="k">Main Road:</span> ${rptE(rootId)}${rootSeg.road?' – '+rptE(rootSeg.road):''}</p>
-    <p><span class="k">Zone:</span> ${rptE(rootSeg.zone||'—')}</p>
-    <p><span class="k">Branch roads:</span> ${segs.filter(s=>s.parent).length}</p>
-    <p><span class="k">Total segments:</span> ${segs.length}</p>
-    <p><span class="k">Total length:</span> ${f1(totalKm)} km</p>
-    <p><span class="k">Total premises:</span> ${f1(totalPrem)}</p>
-   </div>
-   <div class="cov-box"><h3>Survey</h3>
-    <p><span class="k">Team(s):</span> ${rptE(teams||'—')}</p>
-    <p><span class="k">Generated:</span> ${now}</p>
-    <p><span class="k">Sheets:</span> FS1 · FS2 · FS3 · FS4 · FS5 · FS6</p>
-    <p><span class="k">Points:</span> ${rptE(rootSeg.a||'A')} → ${rptE(rootSeg.b||'B')}</p>
-    <p><span class="k">Affiliation:</span> CBSE No. 2230086 · School Code 35085</p>
-   </div>
-   <div class="cov-box toc"><h3>Contents</h3><table>${tocRows}</table></div>
+    <p><span class="k">Main road:</span> ${rptE(root.id)}${root.road?' – '+rptE(root.road):''}</p>
+    <p><span class="k">Zone / colony:</span> ${rptE(root.zone||'-')}</p>
+    <p><span class="k">Point A → Point B:</span> ${rptE(root.a||'A')} → ${rptE(root.b||'B')}</p>
+    <p><span class="k">Segments:</span> ${segs.length} (1 main road + ${segs.length-1} branch road${segs.length===2?'':'s'})</p></div>
+   <div class="cov-box"><h3>Totals</h3>
+    <p><span class="k">Length mapped:</span> ${f1(totKm)} km</p>
+    <p><span class="k">Premises served (FS2 Total):</span> ${f1(totPrem)}</p>
+    <p><span class="k">Team(s):</span> ${rptE(teams||'-')}</p>
+    <p><span class="k">Status:</span> ${incomplete?`<b class="no">${incomplete} of ${segs.length} segments incomplete</b>`:'<b class="ok">All sheets complete</b>'}</p></div>
+   <div class="cov-box toc"><h3>Contents</h3>%%TOC%%</div>
   </div>
-  <div class="pgf">
-   <span>DAPO 100 · Road, Drainage &amp; Service-Unit Mapping · Vivekananda Public School, Daporijo, Upper Subansiri District, Arunachal Pradesh</span>
-   <span>Page 1</span>
+  <div class="sh">Completeness summary</div>
+  ${rptGrid(rptSlWidths(cW),rptSlHead(cH),rptNumber(cFirst,0).join(''))}
+  ${cRows.length>COVER_ROWS?'<div class="nts"><p>Completeness summary continues on the next page.</p></div>':''}
   </div>
- </div>`;
- const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
- <title>DAPO 100 – Colony Report · ${rptE(rootId)}</title>
- <style>
- *{box-sizing:border-box;margin:0;padding:0}
- body{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;color:#1a2420;background:#d8d8d8}
- .page{width:297mm;min-height:210mm;margin:6mm auto;background:#fff;padding:9mm 10mm 13mm;page-break-after:always;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18)}
- @media print{@page{size:A4 landscape;margin:0}body{background:#fff}.page{margin:0;box-shadow:none;page-break-after:always}}
- .ph{display:flex;align-items:center;gap:8px;border-bottom:2.5px solid #2f3833;padding-bottom:5px;margin-bottom:7px}
- .ph-logo{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;background:#fff;border:1px solid #e0e0e0}
- .ph-text h1{font-size:9.5pt;font-weight:700;color:#2f3833;line-height:1.2}.ph-text p{font-size:6.5pt;color:#5c6b63;margin-top:1px}
- .ph-right{margin-left:auto;text-align:right;font-size:6pt;color:#5c6b63;line-height:1.6}.ph-right b{color:#2f3833;font-size:7pt}
- .cov-band{background:#2f3833;color:#fff;padding:14px 18px;border-radius:3px;margin-bottom:10px}
- .cov-band h1{font-size:15pt;font-weight:700}.cov-band h2{font-size:10pt;font-weight:400;opacity:.82;margin-top:3px}.cov-band p{font-size:7pt;opacity:.6;margin-top:5px}
- .cov-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
- .cov-box{border:1px solid #c7cdc8;border-radius:3px;padding:7px 10px}
- .cov-box h3{font-size:6.5pt;font-weight:700;color:#2f3833;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #e5e9e6;padding-bottom:3px;margin-bottom:5px}
- .cov-box p{font-size:7.5pt;line-height:1.7}.cov-box .k{color:#5c6b63;font-size:7pt}
- .toc table{width:100%;border-collapse:collapse}.toc td{padding:2px 5px;font-size:7pt;border-bottom:1px solid #f0f0f0}.toc td:last-child{text-align:right;color:#8a9690;white-space:nowrap}.toc tr:last-child td{border-bottom:none}
- .sh{background:#2f3833;color:#fff;font-size:7.5pt;font-weight:700;padding:3px 8px;margin-bottom:4px;display:flex;align-items:center;gap:6px;border-radius:2px}
- .sh-tag{background:rgba(255,255,255,.15);padding:1px 6px;border-radius:10px;font-size:6pt;font-weight:400}
- .ow{overflow-x:auto}
- .st{width:100%;border-collapse:collapse;font-size:6.5pt;margin-bottom:8px}
- .st th{background:#eef2ea;color:#2f3833;font-weight:700;font-size:5.8pt;text-transform:uppercase;letter-spacing:.2px;border:1px solid #c7cdc8;padding:2.5px 4px;white-space:nowrap;text-align:center}
- .st th.gh{background:#2f3833;color:#fff;text-align:center;border:1px solid #1a2420;font-size:5.8pt}
- .st th.sub{background:#dce6d8;color:#2f3833;text-align:center;border:1px solid #c7cdc8;font-size:5.8pt}
- .st td{border:1px solid #c7cdc8;padding:2.5px 4px;white-space:nowrap;font-size:6.5pt}
- .st tr:nth-child(even) td{background:#f8faf7}.sid{font-weight:700;color:#2f3833}.br{padding-left:12px;color:#5c6b63}.miss{color:#B4302A;font-style:italic;font-size:6pt}.ok{color:#1D9E75;font-weight:700}
- .cpt td{text-align:center}.cpt td.tl{text-align:left}
- .fs5{border:1.5px solid #2f3833;border-radius:2px;page-break-inside:avoid}
- .fs5-bar{background:#2f3833;color:#fff;padding:3px 8px;font-size:7.5pt;font-weight:700;display:flex;justify-content:space-between;align-items:center}
- .fs5-bar span{font-size:6pt;font-weight:400;opacity:.8}
- .fs5-hdr{display:grid;border-bottom:1.5px solid #2f3833}
- .fs5-hc{padding:3px 6px;border-right:1px solid #c7cdc8;font-size:6pt}.fs5-hc:last-child{border-right:none}
- .fs5-hc .lbl{color:#5c6b63;font-size:5.5pt;font-weight:700;text-transform:uppercase;display:block;margin-bottom:1px}.fs5-hc .val{font-weight:700;font-size:7.5pt;color:#1a2420}
- .fs5-body{display:grid;grid-template-columns:1.1fr 0.9fr;border-bottom:1px solid #c7cdc8}
- .fs5-sk{border-right:1.5px solid #2f3833;padding:5px 7px}
- .fs5-sk-lbl{font-size:5.5pt;font-weight:700;color:#5c6b63;text-transform:uppercase;margin-bottom:3px;display:flex;gap:8px;align-items:center}
- .fs5-sk-lbl em{background:#e5e9e6;padding:1px 5px;border-radius:10px;font-weight:400;font-style:normal;font-size:5pt;color:#2f3833}
- .fs5-rd{font-family:monospace;font-size:6.5pt;line-height:1.55;background:#fff;border:1px solid #dce6d8;padding:4px 5px;border-radius:2px;white-space:pre-wrap;word-break:break-word;min-height:52px}
- .fst{width:100%;border-collapse:collapse;font-size:6.5pt}
- .fst th.th-l{background:#2f3833;color:#fff;padding:3px 6px;font-size:6pt;text-align:left;border:1px solid #1a2420;width:44%}
- .fst th.th-c{background:#2f3833;color:#fff;padding:3px 4px;font-size:6pt;text-align:center;border:1px solid #1a2420}
- .fst td{border:1px solid #c7cdc8;padding:3px 4px;text-align:center;font-size:6.5pt}.fst td.lbl{text-align:left;font-weight:600;padding-left:7px}.fst td.tot{font-weight:700;background:#eef2ea}
- .fst tr:nth-child(even) td{background:#f8faf7}.fst tr:nth-child(even) td.tot{background:#e2ead8}.fst tr.grand td{background:#d8e8cc;font-weight:700;font-size:7pt}
- .fs5-leg{border-top:1.5px solid #2f3833;padding:3px 7px;font-size:5.5pt;color:#5c6b63;display:flex;flex-wrap:wrap;gap:2px 12px}.fs5-leg b{color:#1a2420}
- .fs5-nt{border-top:1px solid #c7cdc8;padding:3px 7px;font-size:6pt;min-height:16px;background:#fafcf9}
- .fs5-nt .nl{font-size:5pt;font-weight:700;color:#8a9690;text-transform:uppercase;margin-bottom:1px}
- .illus-ph{border:1.5px dashed #c7cdc8;border-radius:3px;padding:12px;text-align:center;color:#8a9690;font-size:7pt;background:#fafcf9}
- .illus-ph b{display:block;font-size:8.5pt;color:#5c6b63;margin-bottom:3px}
- .col-ph{border:1.5px dashed #2f3833;border-radius:3px;padding:18px;text-align:center;background:#f4f7f2}
- .col-ph b{font-size:9pt;color:#2f3833;display:block;margin-bottom:3px}
- .pgf{position:absolute;bottom:7mm;left:10mm;right:10mm;font-size:5.5pt;color:#8a9690;display:flex;justify-content:space-between;border-top:1px solid #e5e9e6;padding-top:3px}
- .dl-bar{background:#2f3833;color:#fff;padding:8px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:99;font-size:11pt;font-weight:700}
- .dl-bar button{background:#fff;color:#2f3833;border:none;padding:7px 18px;border-radius:6px;font-size:11pt;font-weight:700;cursor:pointer}
- </style></head><body>
- <div class="dl-bar">
-  <img src="${logoSrc}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;background:#fff">
-  DAPO 100 – Colony Report · ${rptE(rootSeg.zone||'')} · ${rptE(rootId)}
-  <button onclick="window.print()">⬇ Download PDF</button>
-  <span style="font-size:9pt;opacity:.7">Print → Save as PDF · A4 landscape</span>
- </div>
- ${coverPage}
- ${rptCompletenessPage(segs,rootSeg,logoSrc,now)}
- ${rptFS2Page(segs,rootSeg,logoSrc,now)}
- ${rptFS3Page(segs,rootSeg,logoSrc,now)}
- ${rptFS4Page(segs,rootSeg,logoSrc,now)}
- ${fs5pages}
- ${rptFS6Page(segs,rootSeg,logoSrc,now,fs6pageNum)}
- ${rptIllusPage(rootSeg,logoSrc,now,illusPageNum,segs)}
+  <div class="pgf"><span>Road, Drainage &amp; Service-Unit Mapping · ${rptE(ctx.label)} · Survey tool created by Vivekananda Public School, Daporijo (prototype)</span><span>Page %%P%% of %%T%%</span></div>
+ </section>`);
+ if(cRows.length>COVER_ROWS){let n=COVER_ROWS;cRest.forEach(ch=>{push('cover',rptPage(ctx,{title:'Completeness summary (continued)',sub:rptE(ctx.label),body:rptGrid(rptSlWidths(cW),rptSlHead(cH),rptNumber(ch,n).join('')).replace('class="st"',ch.length>12?'class="st compact"':'class="st"')}));n+=ch.length})}
+ // FS1
+ rptSheetPages(ctx,{sec:'FS1 - Road Segment Measurement',title:'FIELD SHEET 1 - ROAD SEGMENT MEASUREMENT',sub:sub('One row = one Point A -&gt; Point B segment'),
+  widths:[7.5,7,7,9,9,5,5,5,4.5,3.5,6,5.5,7.5,7,7,4.5],
+  head:rptHead(['Seg ID','Zone/ Colony','Road','Point A','Point B','Start Odo km','End Odo km','Length km','Width m','M/E','Road Type','Surface','Vehicle Access','Start GPS','End GPS','Photo']),
+  rows:segs.map(s=>`<tr>${rptSidCell(s)}${[s.zone,s.road,s.a,s.b,s.so,s.eo,s.len,s.w,s.me,s.rt,s.sf,s.va,rptGPS(s.slat,s.slng),rptGPS(s.elat,s.elng),s.ph].map(v=>`<td>${rptE(v)}</td>`).join('')}</tr>`),
+  total:`<tr class="tr"><td class="sid">Total</td><td colspan="6">${segs.length} segment${segs.length===1?'':'s'}</td><td>${f1(totKm)}</td><td colspan="8"></td></tr>`,
+  notes:['<b>Codes:</b> Road Type = Main / Secondary / Lane / Internal | Surface = Paved / Unpaved / Mixed | M/E = Measured / Estimated',
+   '<b>Length method:</b> '+['Walked track','Maps route','Manual'].map(m=>m+' '+segs.filter(s=>s.kmm===m).length).join(' · ')+(segs.some(s=>!s.kmm)?' · not recorded '+segs.filter(s=>!s.kmm).length:'')]
+ }).forEach(p=>pages.push(p));
+ // FS2 (stored FS2 rows; flagged if FS5 has changed since)
+ const fs2cols=[0,1,2,3,4,6,8,9,10,11,12,13,14];
+ const stale=new Set();
+ const fs2rows=segs.map(s=>{const p=prem(s.id);if(!p)return rptNA(s,14,'FS2');
+  const d=deriveFS2(s.id);if(d&&PREM.some((_,i)=>num(p['p'+i])!==num(d['p'+i])))stale.add(s.id);
+  return `<tr>${rptSidCell(s).replace('</td>',stale.has(s.id)?' *</td>':'</td>')}${fs2cols.map(i=>`<td>${rptE(p['p'+i])}</td>`).join('')}<td class="tot">${rptE(p.tot)}</td></tr>`});
+ const sumP=i=>segs.reduce((s,r)=>{const p=prem(r.id);return s+(p?num(p['p'+i]):0)},0);
+ rptSheetPages(ctx,{sec:'FS2 - Service-Unit Count',title:'FIELD SHEET 2 - SERVICE-UNIT COUNT',sub:sub('Count all premises served along the same segment - both sides'),
+  widths:[8,6,6,6,7,7,7,7,7,6.5,8,6,7,6,5.5],
+  head:rptHead(['Seg ID','Houses','Shops','Rest./ Dhaba','Hotel/ Homestay','Commercial Complex','Units in Complex','School/ College','Hospital/ Clinic','Govt Office','Religious/ Community','Market','Garage/ Workshop','Other','Total']),
+  rows:fs2rows,
+  total:`<tr class="tr"><td class="sid">Total</td>${fs2cols.map(i=>`<td>${sumP(i)}</td>`).join('')}<td class="tot">${f1(totPrem)}</td></tr>`,
+  notes:['<b>Commercial Complex</b> = number of complexes; <b>Units in Complex</b> = units inside them (not also counted as shops). The Total counts the units, not the complexes.',
+   sumP(4)?'<b>Complexes in this colony:</b> '+sumP(4)+' complex(es), '+sumP(5)+' floors in all'+(sumP(7)?', '+sumP(7)+' floor(s) under construction':'')+'.':'',
+   stale.size?'<b>* FS2 out of date:</b> FS5 was changed after this FS2 row was saved ('+[...stale].join(', ')+'). Open FS2 and press Save row to refresh.':'',
+   '<b>Source:</b> filled automatically from the FS5 walking order (both sides added together).']
+ }).forEach(p=>pages.push(p));
+ // FS3
+ rptSheetPages(ctx,{sec:'FS3 - Drain / Gutter Mapping',title:'FIELD SHEET 3 - DRAIN / GUTTER MAPPING',sub:sub('Left and Right are always based on travelling Point A -&gt; Point B'),
+  widths:[8,6,6.5,6,6,6,6.5,6,6,7.5,7,10,6,12.5],
+  head:rptHead(['Seg ID','Left Drain?','Left Type','Left Len m','Left Width m','Right Drain?','Right Type','Right Len m','Right Width m','Condition','Blocked/ Waste?','Outfall / Destination','Photo','Remarks']),
+  rows:segs.map(s=>{const d=drn(s.id);if(!d)return rptNA(s,13,'FS3');
+   return `<tr>${rptSidCell(s)}${[d.ld,d.lt,d.ll,d.lw,d.rd,d.rt,d.rl,d.rw,rptLR(d.lc,d.rc),rptLR(d.lb,d.rb),rptLR(d.lo,d.ro),d.ph,d.rm].map(v=>`<td>${rptE(v)}</td>`).join('')}</tr>`}),
+  total:`<tr class="tr"><td class="sid">Total</td><td colspan="2"></td><td>${segs.reduce((s,r)=>s+num((drn(r.id)||{}).ll),0)}</td><td colspan="3"></td><td>${segs.reduce((s,r)=>s+num((drn(r.id)||{}).rl),0)}</td><td colspan="6"></td></tr>`,
+  notes:['<b>Types:</b> OPEN = visible open drain/gutter | COVERED = slabbed/covered drain | NATURAL = earthen/natural runoff channel | NONE = no drain. Drain length is measured separately on each side; drain width is the drain width, not road width.',
+   '<b>L / R:</b> where the left and right sides differ, Condition, Blocked and Outfall show both sides as "L: ... / R: ...".']
+ }).forEach(p=>pages.push(p));
+ // FS4
+ const sumC=k=>segs.reduce((s,r)=>s+num((col(r.id)||{})[k]),0);
+ rptSheetPages(ctx,{sec:'FS4 - Collection Access & Waste Hotspots',title:'FIELD SHEET 4 - COLLECTION ACCESS &amp; WASTE HOTSPOTS',sub:sub('Link everything to the same Segment ID'),
+  widths:[8,7,7.5,8.5,6.5,6,6.5,7.5,12,11,6,13.5],
+  head:rptHead(['Seg ID','Existing Collection?','Frequency','Vehicle Used / Possible','Collection Points','GVP / Dump','Burning Points','Drain/River Dumping?','Access Problem','Turning / Stop Constraint','Photo','Field Notes']),
+  rows:segs.map(s=>{const c=col(s.id);if(!c)return rptNA(s,11,'FS4');
+   return `<tr>${rptSidCell(s)}${[c.ex,c.fr,c.vh,c.cp,c.gv,c.bp,c.dr,c.ap,c.tc,c.ph,c.fn].map(v=>`<td>${rptE(v)}</td>`).join('')}</tr>`}),
+  total:`<tr class="tr"><td class="sid">Total</td><td colspan="3"></td><td>${sumC('cp')}</td><td>${sumC('gv')}</td><td>${sumC('bp')}</td><td>${segs.filter(r=>(col(r.id)||{}).dr==='Yes').length} Yes</td><td colspan="4"></td></tr>`,
+  notes:['<b>GVP / Dump</b> and <b>Burning Points</b> are taken from the FS5 walking order for the same segment.',
+   '<b>Access:</b> '+segs.filter(r=>String((col(r.id)||{}).ap||'').trim()).length+' segment(s) with an access problem · '+segs.filter(r=>String((col(r.id)||{}).tc||'').trim()).length+' with a turning / stop constraint.']
+ }).forEach(p=>pages.push(p));
+ // FS5 - one table, one row per segment (tally counted from the walking order, so it matches FS2)
+ const withSk=segs.filter(s=>skt(s.id)),noSk=segs.filter(s=>!skt(s.id));
+ const tSum=TALLY.map(()=>({l:0,r:0}));
+ const fs5rows=segs.map(s=>{const sk=skt(s.id);if(!sk)return rptNA(s,24,'FS5');
+  let L=[],R=[];try{L=JSON.parse(sk.seql||'[]')}catch(e){}try{R=JSON.parse(sk.seqr||'[]')}catch(e){}
+  const ty=rptTally(L,R),main=ty.slice(0,TALLY.length),ext=ty.slice(TALLY.length);
+  main.forEach((r,i)=>{tSum[i].l+=r.l;tSum[i].r+=r.r});
+  const notes=main.filter(r=>r.note).map(r=>r.t==='Commercial Complex'?'Complex: '+r.note:r.t==='Institutions'?r.note:r.t+': '+r.note);
+  if(sk.nt)notes.push(sk.nt);
+  return `<tr>${rptSidCell(s)}${[s.road||sk.road,s.a||sk.a,s.b||sk.b,sk.team].map(v=>`<td>${rptE(v)}</td>`).join('')}${main.map(r=>`<td class="c">${r.l}</td><td class="c">${r.r}</td><td class="c tot">${r.l+r.r}</td>`).join('')}<td>${rptE(ext.map(e=>e.t+' '+(e.l+e.r)).join(', '))}</td><td class="sm">${rptE(notes.join('; '))}</td></tr>`});
+ const short=['Households','Shops','Rest./ Dhaba','Comm. Complex','Institutions','GVP / Dump'];
+ rptSheetPages(ctx,{sec:'FS5 - Segment Sketch & Premises Tally',title:'FIELD SHEET 5 - SEGMENT SKETCH &amp; PREMISES TALLY',sub:sub('Premises tally, LEFT / RIGHT based on travelling Point A -&gt; Point B'),
+  widths:[8.4,7,7.5,7.5,5,...Array(18).fill(2.6),7,11.8],headRows:2,
+  head:`<tr><th rowspan="2">Seg ID</th><th rowspan="2">Road</th><th rowspan="2">Point A</th><th rowspan="2">Point B</th><th rowspan="2">Team</th>${short.map(h=>`<th colspan="3">${h}</th>`).join('')}<th rowspan="2">Other types</th><th rowspan="2">Notes</th></tr><tr>${short.map(()=>'<th class="lr">L</th><th class="lr">R</th><th class="lr">T</th>').join('')}</tr>`,
+  rows:fs5rows,
+  total:`<tr class="tr"><td class="sid">Total</td><td colspan="4"></td>${tSum.map(t=>`<td class="c">${t.l}</td><td class="c">${t.r}</td><td class="c">${t.l+t.r}</td>`).join('')}<td colspan="2"></td></tr>`,
+  notes:['<b>L / R / T</b> = Left / Right / Total, facing Point B. Households, Shops and Institutions include custom types set to count as them in FS2 (shown in Notes). <b>Other types</b> = custom types with no column of their own.',
+   '<b>Commercial Complex</b> counts complexes; the units inside them are in Notes and in FS2 Units in Complex.',
+   withIll?'<b>Road sketches:</b> see the road illustration pages at the end, one page per road.':'<b>Road sketches:</b> tick "Include the colony map and road illustrations" to add one page per road.']
+ }).forEach(p=>pages.push(p));
+ // FS6 - entries for this colony (same zone, or starting/ending on one of its segments)
+ const zn=String(root.zone||'').trim().toLowerCase();
+ const fs6=D.daily.filter(r=>(zn&&String(r.zn||'').trim().toLowerCase()===zn)||ids.has(r.ss)||ids.has(r.es));
+ rptSheetPages(ctx,{sec:'FS6 - Daily Team & Route Control',title:'FIELD SHEET 6 - DAILY TEAM &amp; ROUTE CONTROL',sub:sub('Supervisor uses this to prevent duplicate or missed road segments'),
+  widths:[7,7,9,9,9,6.5,6.5,8,7,7,24],
+  head:rptHead(['Date','Team','Zone','Start Seg.','End Seg.','No. Segments','Approx km','Sheets Used','Checked?','Revisit?','Supervisor Notes']),
+  rows:fs6.length?fs6.map(r=>`<tr>${[rptDate(r.dt),r.tm,r.zn,r.ss,r.es,r.ns,r.km,r.su,r.ck,r.rv,r.sn].map(v=>`<td>${rptE(v)}</td>`).join('')}</tr>`):['<tr class="na"><td colspan="11">No FS6 entries for this colony yet</td></tr>'],
+  notes:['<b>End-of-day check:</b> Unique Segment IDs | Odometer complete | Width M/E marked | Premises counted | Drain data complete | GPS/photos referenced | Revisit cases listed.']
+ }).forEach(p=>pages.push(p));
+ // drawings: colony map, then one page per road (roads with an FS5 walking order)
+ if(withIll){
+  const cm=colonyMapSVG(rootId);
+  if(cm)push('Colony Map & Road Illustrations',rptIllPage(ctx,'COLONY MAP',sub('Schematic - not to scale'),cm,noSk.length?'No road drawing yet for '+noSk.map(s=>s.id).join(', ')+' (FS5 not entered).':''));
+  withSk.forEach(s=>{const sv=illustrationSVG(s.id);if(sv)push('Colony Map & Road Illustrations',rptIllPage(ctx,'ROAD ILLUSTRATION - '+rptE(s.id)+(s.road?' - '+rptE(s.road):''),sub('Schematic - not to scale'),sv))});
+ }
+ // contents + page numbers
+ const first={};pages.forEach((p,i)=>{if(!(p.sec in first))first[p.sec]=i+1});
+ const toc=`<table>${Object.entries(first).map(([s,n])=>`<tr><td>${s==='cover'?'Cover &amp; completeness summary':rptE(s)}</td><td>${n}</td></tr>`).join('')}</table>`;
+ const T=pages.length;
+ const body=pages.map((p,i)=>p.html.split('%%P%%').join(String(i+1)).split('%%T%%').join(String(T))).join('\n').replace('%%TOC%%',toc);
+ return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>DAPO 100 - Colony Report - ${rptE(rootId)}</title><style>${RPT_CSS}</style></head><body>
+ <div class="dl-bar"><img src="${ctx.logo}" alt=""><span>DAPO 100 - Colony Report · ${rptE(ctx.label)}</span><button onclick="window.print()">Download PDF</button><em>Opens the print window: choose "Save as PDF". Paper A4, landscape.</em></div>
+ ${body}
+ <script>(function(){document.querySelectorAll('.pb').forEach(function(b){var t=b.querySelector('table.st');if(!t)return;['compact','tight'].forEach(function(c){if(b.scrollHeight>b.clientHeight+1)t.classList.add(c)})})})();<\/script>
  </body></html>`;
+}
+const RPT_CSS=`
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:Arial,Helvetica,sans-serif;color:#1a2420;background:#d8dbd8}
+.page{width:297mm;height:209mm;margin:6mm auto;background:#fff;padding:8mm 10mm 0;position:relative;overflow:hidden;page-break-after:always;break-after:page;box-shadow:0 2px 10px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.page:last-child{page-break-after:auto;break-after:auto}
+@page{size:A4 landscape;margin:0}
+@media print{body{background:#fff}.page{margin:0;box-shadow:none}.dl-bar{display:none!important}}
+.ph{display:flex;align-items:center;gap:9px;border-bottom:2.5px solid #2f3833;padding-bottom:5px;margin-bottom:6px}
+.ph-logo{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;background:#fff;border:1px solid #dde2de}
+.ph-text h1{font-size:12pt;font-weight:700;color:#2f3833;line-height:1.2;letter-spacing:.2px}
+.ph-text p{font-size:7.5pt;color:#5c6b63;margin-top:2px}
+.ph-right{margin-left:auto;text-align:right;font-size:7pt;color:#5c6b63;line-height:1.5}
+.ph-right .proj{display:block;font-size:6.5pt;font-weight:700;color:#2f3833;letter-spacing:.3px}
+.ph-right b{color:#2f3833}
+.pb{flex:1;min-height:0;overflow:hidden}
+.pgf{height:11mm;display:flex;justify-content:space-between;align-items:center;font-size:6.5pt;color:#8a9690;border-top:1px solid #dde2de}
+.cov-band{background:#2f3833;color:#fff;padding:12px 16px;border-radius:3px;margin:4px 0 9px}
+.cov-band h1{font-size:15pt;font-weight:700;letter-spacing:.4px}.cov-band h2{font-size:10pt;font-weight:400;color:#d5e3dc;margin-top:3px}
+.cov-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:9px}
+.cov-box{border:1px solid #c7cdc8;border-radius:3px;padding:7px 10px}
+.cov-box h3{font-size:7pt;font-weight:700;color:#2f3833;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #e5e9e6;padding-bottom:3px;margin-bottom:4px}
+.cov-box p{font-size:8pt;line-height:1.65}.cov-box .k{color:#5c6b63}
+.toc table{width:100%;border-collapse:collapse}.toc td{padding:1.5px 4px;font-size:7.5pt;border-bottom:1px solid #eef1ee}.toc td:last-child{text-align:right;color:#5c6b63;width:22px}
+.sh{background:#2f3833;color:#fff;font-size:8pt;font-weight:700;padding:3px 8px;margin-bottom:4px;border-radius:2px}
+.st{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:5px}
+.st th{background:#2f3833;color:#fff;font-size:6.8pt;font-weight:700;border:1px solid #1a2420;padding:4px 3px;text-align:center;vertical-align:middle;line-height:1.2;word-wrap:break-word}
+.st td{border:1px solid #b9c1bb;padding:3.5px 4px;font-size:7.4pt;line-height:1.25;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
+.st tbody tr:nth-child(even) td{background:#f6f8f5}
+.st td.sid{font-weight:700;color:#2f3833;white-space:nowrap;overflow-wrap:normal}
+.st td.sid.br{color:#4f5e56;font-weight:600;padding-left:8px}
+.st tr.na td{color:#a0412f;font-style:italic;background:#fbf6f4}.st tr.na td.sid{font-style:normal}
+.st tr.tr td{background:#e3ebdf!important;font-weight:700}
+.st td.tot{font-weight:700;background:#eef2ea}
+.st td.ok,.ok{color:#1b7f5f;font-weight:700;text-align:center}.st td.no,.no{color:#b4302a;font-weight:700;text-align:center}
+.st td:last-child.ok,.st td:last-child.no{text-align:left}
+.st td.sl{text-align:center;color:#5c6b63;white-space:nowrap}
+.st td.c{text-align:center}.st td.sm{font-size:6.6pt}.st th.lr{font-size:6.2pt;padding:2px 1px}
+.st.compact th{font-size:6.2pt;padding:2.5px 2px}.st.compact td{font-size:6.7pt;padding:2px 3px;line-height:1.2}
+.st.tight th{font-size:5.8pt;padding:1.5px 1px}.st.tight td{font-size:6pt;padding:1px 2px;line-height:1.1}
+.nts{margin-top:3px}.nts p{font-size:7pt;color:#3d4a43;line-height:1.45;margin-bottom:2px}
+.ill{height:100%;display:flex;align-items:center;justify-content:center}.ill.wn{height:calc(100% - 8mm)}.ill svg{max-width:100%;max-height:100%}
+.dl-bar{background:#2f3833;color:#fff;padding:8px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:9;font:700 14px Arial,sans-serif;flex-wrap:wrap}
+.dl-bar img{width:34px;height:34px;border-radius:50%;background:#fff}
+.dl-bar button{background:#fff;color:#2f3833;border:0;padding:7px 18px;border-radius:6px;font:700 14px Arial,sans-serif;cursor:pointer}
+.dl-bar em{font:400 12px Arial,sans-serif;color:#c8ddd5}
+@media screen and (max-width:1150px){.page{zoom:.5}}
+`;
+function openColonyReport(){
+ const rootId=($('#colRptPick')&&$('#colRptPick').value)||COLONY_RPT_SEG;
+ if(!rootId){toast('Select a colony first');return}
+ const html=buildColonyReport(rootId,!!($('#colRptIll')&&$('#colRptIll').checked));
+ if(!html){toast('That road was not found - reload and try again');return}
  const w=window.open('','_blank');
- if(!w){toast('Pop-up blocked — allow pop-ups for this site to open the report');return}
+ if(!w){toast('Pop-up blocked - allow pop-ups for this site to open the report');return}
  w.document.write(html);w.document.close();
 }
 function exportView(){return `<div class="card"><h2>Export</h2>
@@ -1486,6 +1395,24 @@ function deriveFS2(segId){
   else{const pt=(D.ptypes||[]).find(x=>x.name===t);out['p'+col(pt&&pt.fs2)]++}
  });
  return out;
+}
+// FS5 screen note (display only, never saved): what the Commercial Complex row
+// stands for in FS2, and custom types that have no FS5 tally row of their own.
+function fs5Extras(items){
+ const cx=items.filter(it=>it.t==='Commercial Complex');
+ const builtIn=new Set(TALLY),extra={};
+ items.forEach(it=>{if(builtIn.has(it.t)||it.t==='__intersection__')return;
+  const pt=(D.ptypes||[]).find(x=>x.name===it.t),tgt=pt&&pt.fs2?pt.fs2:'Other';
+  if(FS2_TO_TALLY[tgt]==null){const key=it.t+'|'+tgt;extra[key]=(extra[key]||0)+1}});
+ return{cxn:cx.length,un:cx.reduce((s,it)=>s+num(it.un),0),fl:cx.reduce((s,it)=>s+num(it.fl),0),uc:cx.reduce((s,it)=>s+num(it.uc),0),
+  extra:Object.entries(extra).map(([k,n])=>{const[t,tgt]=k.split('|');return{t,tgt,n}})};
+}
+function fs5Note(){
+ const el=document.getElementById('fs5note');if(!el)return;
+ const x=fs5Extras([...SEQ.l,...SEQ.r]);const parts=[];
+ if(x.cxn)parts.push('Commercial Complex: '+x.cxn+' complex(es) with '+x.un+' units, '+x.fl+' floors'+(x.uc?' ('+x.uc+' under construction)':'')+' - FS2 Total counts the '+x.un+' units, not the complexes.');
+ if(x.extra.length)parts.push('Not in the rows above: '+x.extra.map(e=>e.t+' x'+e.n+' (FS2: '+e.tgt+')').join(', ')+'.');
+ el.textContent=parts.join(' ');
 }
 function fs2Total(d){return PREM.reduce((s,_,i)=>FS2_NOTOTAL.has(i)?s:s+num(d['p'+i]),0)}
 function fs2Note(){
@@ -2172,9 +2099,12 @@ function pdfFromJpeg(jpg,iw,ih){
  push(enc(x+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF\n'));
  const out=new Uint8Array(pos);let p=0;chunks.forEach(c=>{out.set(c,p);p+=c.length});return out;
 }
-// pdfFromJpegA3: same as pdfFromJpeg but targets A3 landscape (420×297mm = 1190.55×841.89pt)
+// One-page PDF on a real A4 or A3 sheet. The sheet is turned to suit the drawing:
+// landscape when it is wide (most roads), portrait when it is tall. Drawing is
+// scaled to fit inside an 18 pt margin and centred, never cropped.
+function pdfPageSize(iw,ih,a3){const s=a3?[841.89,1190.55]:[595.28,841.89];return ih>iw*0.8?{pw:s[0],ph:s[1],land:false}:{pw:s[1],ph:s[0],land:true}}
 function pdfFromJpegSized(jpg,iw,ih,a3){
- const pw=a3?1190.55:841.89,ph=a3?841.89:595.28,m=18,dw=pw-2*m,dh=ph-2*m;
+ const {pw,ph}=pdfPageSize(iw,ih,a3),m=18,dw=pw-2*m,dh=ph-2*m;
  // fit image into page box preserving aspect ratio
  let fw=dw,fh=dw*ih/iw;if(fh>dh){fh=dh;fw=dh*iw/ih}
  const ox=m+(dw-fw)/2,oy=m+(dh-fh)/2;
@@ -2202,7 +2132,7 @@ async function downloadIllusWithSize(svg,name,btn){
  const prompt=document.createElement('span');
  prompt.className='size-prompt';
  prompt.style.cssText='display:inline-flex;gap:6px;align-items:center;font-size:13px';
- prompt.innerHTML='Size: <button class="btn sm" data-sz="a4">A4 portrait</button><button class="btn sm" data-sz="a3">A3 landscape</button><button class="btn g sm" onclick="this.parentNode.remove()">✕</button>';
+ prompt.innerHTML='Paper size: <button type="button" class="btn sm" data-sz="a4">A4</button><button type="button" class="btn sm" data-sz="a3">A3</button><button type="button" class="btn g sm" title="Cancel" onclick="this.parentNode.remove()">Cancel</button>';
  row.appendChild(prompt);
  prompt.querySelectorAll('[data-sz]').forEach(b=>{
   b.onclick=async()=>{
@@ -2214,7 +2144,7 @@ async function downloadIllusWithSize(svg,name,btn){
      const jb=await canvasBlob(c,'image/jpeg',0.92);
      const bytes=new Uint8Array(await jb.arrayBuffer());
      dl(name+'.pdf',new Blob([pdfFromJpegSized(bytes,c.width,c.height,a3)],{type:'application/pdf'}));
-     toast('PDF saved — '+(a3?'A3 landscape':'A4 portrait'));
+     toast('PDF saved - '+(a3?'A3 ':'A4 ')+(pdfPageSize(c.width,c.height,a3).land?'landscape':'portrait'));
     }catch(e){toast('Could not create the file: '+(e.message||e))}
    });
   };
