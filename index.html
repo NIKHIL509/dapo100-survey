@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>VPS - DAPO 100 Survey</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>VPS - DAPO 100 Survey</title>
 <style>
 :root{--bg:#f6f7f5;--card:#fff;--ink:#1c2420;--mut:#66726b;--line:#dde2de;--acc:#0f4c81;--acc2:#e6eef6;--warn:#b3541e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121513;--card:#1a1e1b;--ink:#e8ede9;--mut:#93a09a;--line:#2b322d;--acc:#6fb0ea;--acc2:#1a2633;--warn:#e88b57}}
 :root[data-theme="dark"]{--bg:#121513;--card:#1a1e1b;--ink:#e8ede9;--mut:#93a09a;--line:#2b322d;--acc:#6fb0ea;--acc2:#1a2633;--warn:#e88b57}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0b3558;color:#fff}header img{width:56px;height:56px;border-radius:50%;background:#fff;flex:none}h1{font-size:17px;margin:0;line-height:1.2}header p{margin:2px 0 0;color:#b9cfe4;font-size:12px}
-#me{margin-left:auto;text-align:right;font-size:12px;color:#cfe0f0}#me button{margin-top:4px;background:transparent;border:1px solid #7fa9cc;color:#fff;padding:4px 10px;border-radius:8px;font-size:12px}
+header{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#2f3833;color:#fff}header img{width:56px;height:56px;border-radius:50%;background:#fff;flex:none}h1{font-size:17px;margin:0;line-height:1.2}header p{margin:2px 0 0;color:#b3cfc0;font-size:12px}
+#me{margin-left:auto;text-align:right;font-size:12px;color:#c8ddd5}#me button{margin-top:4px;background:transparent;border:1px solid #6fa08a;color:#fff;padding:4px 10px;border-radius:8px;font-size:12px}
 footer{padding:14px;text-align:center;color:var(--mut);font-size:12px;border-top:1px solid var(--line);margin-top:10px}footer b{color:var(--ink)}
 nav{display:flex;gap:6px;overflow-x:auto;padding:8px 14px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
 nav button{white-space:nowrap;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:99px;font-size:13px}
@@ -35,8 +35,16 @@ th{background:#2f3833;color:#fff;text-align:left;padding:6px;white-space:nowrap;
 .warn{color:var(--warn);font-size:13px;margin:3px 0}.ok{color:var(--acc);font-size:13px}
 .block{background:var(--acc2);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center}
 .block h2{margin-top:0}
-#msg{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;display:none;z-index:9}
-a.x{color:var(--acc);cursor:pointer;margin-right:8px}
+#msg{max-height:40vh;overflow:auto;line-height:1.4;font-size:14px;position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;display:none;z-index:9}
+a.x{display:inline-block;color:var(--ink);background:var(--card);border:1px solid var(--line);cursor:pointer;margin:2px 6px 2px 0;padding:5px 11px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none}
+a.x:hover{background:var(--acc2)}
+a.x[onclick^="del("],a.x[onclick^="removeMember("]{color:#a32d2d;border-color:#e6b8b8}
+.btn.sm{padding:5px 11px;font-size:12px}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:translateY(1px)}
+.btn.g:hover{background:var(--acc2);filter:none}
+nav button:hover{background:var(--acc2)}
+button{font-family:inherit;cursor:pointer}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 #login{max-width:340px;margin:60px auto;padding:20px}
 #login input{margin-bottom:10px}
 .chip{display:inline-flex;align-items:center;gap:4px;background:var(--acc2);border-radius:99px;padding:3px 9px;margin:2px 4px 2px 0;font-size:12px}
@@ -89,6 +97,7 @@ coll:{n:'FS4 Access Hotspots',t:'FS4 - Collection Access & Waste Hotspots',perm:
 sketch:{n:'FS5 Sketch Tally',t:'FS5 - Segment Sketch & Premises Tally',perm:'fs5',h:'Pick a Segment ID already entered in FS1 - Zone, Road and Points fill in on their own. Add each building below in the order you walk from Point A to Point B; the tallies and the sketch build themselves.',c:[
  C('id','Segment ID','segsel'),C('zone','Zone/Colony','auto'),C('road','Road','auto'),C('a','Point A','auto'),C('b','Point B','auto'),C('team','Team'),
  ...TALLY.flatMap((t,i)=>[C('l'+i,t+' LEFT','auto'),C('r'+i,t+' RIGHT','auto'),C('t'+i,t+' TOTAL','auto')]),
+ C('cxun','Complex Units (total)','auto'),C('cxfl','Complex Floors (total)','auto'),C('cxuc','Complex Floors UC (total)','auto'),
  C('sk','Road Sketch (text)','x'),C('nt','Notes','x'),C('seql','Sequence Left (json)','hid'),C('seqr','Sequence Right (json)','hid')]},
 daily:{n:'FS6 Daily Control',t:'FS6 - Daily Team & Route Control',perm:'admin',h:'Supervisor check to prevent duplicate or missed segments.',c:[
  C('dt','Date','d'),C('tm','Team'),C('zn','Zone'),C('ss','Start Seg.'),C('es','End Seg.'),C('ns','No. Segments','n'),C('km','Approx km','n'),
@@ -106,8 +115,8 @@ let D={};[...KEYS,...ADMIN_KEYS].forEach(k=>D[k]=[]);
 let tab='home',edit=-1;let SEQ={l:[],r:[]};let lastBt='Households';let SESSION_INT=[];let LOGGING_IN=false;let LAST_SEGMENT='';
 let ME=null; // {username,name,team,admin,perms,teams}
 const $=s=>document.querySelector(s),num=v=>{const x=parseFloat(v);return isNaN(x)?0:x};
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&lt;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c));
-function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',2600)}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c));
+function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',Math.min(14000,Math.max(5000,3500+String(t).length*75)))}
 async function withSpinner(btn,label,fn){
  if(!btn)return fn();
  const orig=btn.innerHTML,wasDisabled=btn.disabled;
@@ -212,7 +221,7 @@ async function doLogin(btn){
  if(btn){btn.disabled=false;btn.textContent='Log in'}
  LOGGING_IN=false;
 }
-function logout(){if(POLL_TIMER){clearInterval(POLL_TIMER);POLL_TIMER=null}ME=null;try{localStorage.removeItem('dapo_login')}catch(e){}$('#app').style.display='none';$('#loginWrap').style.display='block';$('#lu').value='';$('#lp').value=''}
+function logout(){if(POLL_TIMER){clearInterval(POLL_TIMER);POLL_TIMER=null}try{if(WALK.on&&WALK.wid!=null)navigator.geolocation.clearWatch(WALK.wid)}catch(e){}walkReset();ME=null;try{localStorage.removeItem('dapo_login')}catch(e){}$('#app').style.display='none';$('#loginWrap').style.display='block';$('#lu').value='';$('#lp').value=''}
 function enterApp(){
  $('#loginWrap').style.display='none';$('#app').style.display='block';
  $('#me').innerHTML=`${esc(ME.name)} - ${esc(ME.team)}${ME.admin?' (admin)':''}<br><button onclick="logout()">Log out</button>`;
@@ -245,10 +254,35 @@ function autos(k,r){
   r.bp=items.filter(it=>/burning/i.test(it.t||'')).length;
  }
  return r}
+// Maps a custom type's fs2 target to the TALLY row index that represents it.
+// 'Houses'→0(Households), 'Shops'→1, 'Rest./ Dhaba'→2, institution targets→4(Institutions)
+// Hotel/Homestay, Market, Garage/Workshop have no built-in TALLY row → return -1
+const FS2_TO_TALLY={
+ 'Houses':0,'Shops':1,'Rest./ Dhaba':2,
+ 'School/ College':4,'Hospital/ Clinic':4,'Govt Office':4,'Religious/ Community':4,'Other':4
+};
 function recalcSketch(r){
  const rd=D.road.find(x=>x.id===r.id);
  r.zone=rd?rd.zone||'':'';r.road=rd?rd.road||'':'';r.a=rd?rd.a||'':'';r.b=rd?rd.b||'':'';
+ // count built-in TALLY items
  TALLY.forEach((label,i)=>{r['l'+i]=SEQ.l.filter(it=>it.t===label).length;r['r'+i]=SEQ.r.filter(it=>it.t===label).length;r['t'+i]=r['l'+i]+r['r'+i]});
+ // fold custom types into matching tally row by their fs2 mapping
+ const builtIn=new Set(TALLY);
+ const builtInSpecial=new Set(['__intersection__','GVP / Dump Point','Commercial Complex','Institutions']);
+ [['l',SEQ.l],['r',SEQ.r]].forEach(([side,seq])=>{
+  seq.forEach(it=>{
+   if(builtIn.has(it.t)||it.t==='__intersection__')return;
+   const pt=(D.ptypes||[]).find(x=>x.name===it.t);
+   const fs2target=pt&&pt.fs2?pt.fs2:'Other';
+   const ti=FS2_TO_TALLY[fs2target];
+   if(ti!=null){r[side+ti]=(r[side+ti]||0)+1;r['t'+ti]=(r['l'+ti]||0)+(r['r'+ti]||0)}
+  });
+ });
+ // Commercial Complex units/floors/UC totals (feeds into FS2 total explanation)
+ const allItems=[...SEQ.l,...SEQ.r];
+ r.cxun=allItems.filter(it=>it.t==='Commercial Complex').reduce((s,it)=>s+num(it.un),0);
+ r.cxfl=allItems.filter(it=>it.t==='Commercial Complex').reduce((s,it)=>s+num(it.fl),0);
+ r.cxuc=allItems.filter(it=>it.t==='Commercial Complex').reduce((s,it)=>s+num(it.uc),0);
  r.seql=JSON.stringify(SEQ.l);r.seqr=JSON.stringify(SEQ.r);
  return r}
 
@@ -272,7 +306,7 @@ function input(c,v){
  if(c.t==='s'){const sel=v||'';return `<select id="${id}"><option value=""></option>${c.o.map(o=>`<option ${o===sel?'selected':''}>${o}</option>`).join('')}</select>`}
  if(c.t==='c')return `<input id="${id}" list="dl_${c.k}" value="${val}"><datalist id="dl_${c.k}">${c.o.map(o=>`<option>${o}</option>`).join('')}</datalist>`;
  if(c.t==='x')return `<textarea id="${id}" rows="3" style="font-family:ui-monospace,monospace">${val}</textarea>`;
- if(c.t==='n')return `<input id="${id}" type="number" step="any" inputmode="decimal" value="${val}">`;
+ if(c.t==='n')return `<input id="${id}" type="number" step="any" inputmode="decimal"${COORD_KEYS.has(c.k)?'':' min="0"'} value="${val}">`;
  if(c.t==='d')return `<input id="${id}" type="date" value="${val||(edit<0?new Date().toISOString().slice(0,10):'')}">`;
  return `<input id="${id}" value="${val}">`}
 function readForm(k){const r={};SH[k].c.forEach(c=>{if(c.t!=='auto'&&c.t!=='hid'){const e=$('#f_'+c.k);r[c.k]=e?e.value.trim():''}});return autos(k,r)}
@@ -280,6 +314,7 @@ function refreshAuto(k){const r=autos(k,readForm(k));SH[k].c.forEach(c=>{if(c.t=
 function onIn(k){refreshAuto(k)}
 function onCh(k){
  if(k==='sketch'){const idEl=$('#f_id');if(idEl){/* segsel already resets via its own onchange */}}
+ if(k!=='prem'&&autoLoadExisting(k))return;
  refreshAuto(k)}
 
 /* ---------- points panel (GPS capture) ---------- */
@@ -358,13 +393,6 @@ function showIllustration(){
  const wrap=$('#illuswrap');
  if(wrap)wrap.innerHTML=svg||'<p class="hint">Could not build an illustration for this segment.</p>';
 }
-function downloadIllustration(){
- const svg=$('#illuswrap svg');
- if(!svg){toast('Generate the illustration first');return}
- const xml=illExport(svg);
- const id=$('#f_id')?$('#f_id').value:'segment';
- dl('DAPO100_'+id+'_illustration.svg',new Blob([xml],{type:'image/svg+xml'}));
-}
 
 /* ---------- Teams & Access (admin) ---------- */
 const FS_LABELS={fs1:'FS1 Road',fs2:'FS2 Units',fs3:'FS3 Drain',fs4:'FS4 Access',fs5:'FS5 Sketch'};
@@ -437,6 +465,7 @@ async function removeMember(id,btn){
 /* ---------- CRUD ---------- */
 async function put(k,r){
  if(!r._id)r._id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ const bad=validateRow(k,r);if(bad){toast('NOT saved: '+bad);return false}
  try{const res=await gs('saveRow',SH[k].n,SH[k].c.map(c=>c.l),SH[k].c.map(c=>{const v=r[c.k];return (c.t==='n'||c.t==='auto')&&v!==''&&v!=null&&!isNaN(v)?Number(v):(v??'')}),r._id,ME.username);
   if(!res||!res.ok){if(res&&res.denied)blockedToast(k);else toast('NOT saved: '+(res&&res.msg||'unknown error'));return false}
  }catch(e){toast('NOT saved: '+(e.message||e));return false}
@@ -464,19 +493,19 @@ async function add(k,btn){
   const idCol=SH[k].c.find(c=>c.k==='id');
   if(idCol&&idCol.t==='segsel'){
    const existingIdx=D[k].findIndex(x=>x.id===r.id);
-   if(existingIdx>=0){r._id=D[k][existingIdx]._id;r._t=D[k][existingIdx]._t}
+   if(existingIdx>=0){if(k!=='prem'&&!confirm('This segment already has a saved entry. Replace it with what is on screen?'))return;r._id=D[k][existingIdx]._id;r._t=D[k][existingIdx]._t}
   }
  }
  if(!await withSpinner(btn,edit>=0?'Updating...':'Saving...',()=>put(k,r)))return;
  edit=-1;if(k==='sketch')SEQ={l:[],r:[]};render();toast('Saved');
 }
-function go(t){tab=t;edit=-1;if(t==='sketch'){SEQ={l:[],r:[]};lastBt='Households';SEQ_SEL=null;SEQ_INS=null;SEQ_EDIT=false}if(t==='road')SESSION_INT=[];render();window.scrollTo(0,0)}
+function go(t){tab=t;edit=-1;FORCE_LOAD=true;if(t==='sketch'){SEQ={l:[],r:[]};lastBt='Households';SEQ_SEL=null;SEQ_INS=null;SEQ_EDIT=false}if(t==='road')SESSION_INT=[];render();window.scrollTo(0,0)}
 function ed(k,i){
  if(k==='road'){if(D.road[i])LAST_SEGMENT=D.road[i].id;edit=-1;render();window.scrollTo(0,0);return}
  edit=i;
  if(k==='sketch'){const row=D.sketch[i]||{};try{SEQ={l:JSON.parse(row.seql||'[]'),r:JSON.parse(row.seqr||'[]')}}catch(e){SEQ={l:[],r:[]}};SEQ_SEL=null;SEQ_INS=null;SEQ_EDIT=false}
  render();window.scrollTo(0,0)}
-async function del(k,i,btn){if(confirm('Delete this row?')){const id=D[k][i].id;await withSpinner(btn,'Deleting...',()=>rm(k,D[k][i]._id));if(k==='road'&&LAST_SEGMENT===id)LAST_SEGMENT='';render()}}
+async function del(k,i,btn){if(confirm(delMessage(k,i))){const id=D[k][i].id;await withSpinner(btn,'Deleting...',()=>rm(k,D[k][i]._id));if(k==='road'&&LAST_SEGMENT===id)LAST_SEGMENT='';render()}}
 function cancelEdit(k){edit=-1;if(k==='sketch')SEQ={l:[],r:[]};render()}
 function clearForm(k){if(k==='sketch')SEQ={l:[],r:[]};render()}
 
@@ -547,7 +576,7 @@ function sheetView(k){
  let html=`<div class="card"><h2>${s.t}</h2><p class="hint">${s.h}</p>${k==='prem'?'<p id="fs2note" class="hint" style="font-weight:600"></p>':''}
   <div class="grid" oninput="onIn('${k}')"${onchAttr}>${cols.map(c=>`<label class="${c.t==='x'?'wide':''}">${c.l}${input(c,row[c.k])}</label>`).join('')}</div>
   <div class="row"><button class="btn" onclick="add('${k}',this)">${edit>=0?'Update row':'Save row'}</button>${edit>=0?`<button class="btn g" onclick="cancelEdit('${k}')">Cancel edit</button>`:`<button class="btn g" onclick="clearForm('${k}')">Clear</button>`}${k==='sketch'?`<button type="button" class="btn g" onclick="genSketch()">Auto-generate sketch</button><button type="button" class="btn g" onclick="showIllustration()">Build illustration</button>`:''}</div>
-  ${k==='sketch'?`<div id="illuswrap" style="margin-top:12px"></div><div class="row" style="margin-top:8px"><button type="button" class="btn g" onclick="downloadIllustration()">Download illustration (SVG)</button></div>`:''}</div>`;
+  ${k==='sketch'?`<div id="illuswrap" style="margin-top:12px"></div><div class="row" style="margin-top:8px"><button type="button" class="btn g" onclick="downloadIllustration('pdf',this)">Download PDF</button><button type="button" class="btn g" onclick="downloadIllustration('jpg',this)">Download JPEG</button></div>`:''}</div>`;
  if(k==='sketch')html+=seqPanel();
  html+=`<div class="card"><h2>${s.n} - ${D[k].length} row(s)</h2><div class="tw"><table><tr><th></th>${cols.map(c=>`<th>${c.l}</th>`).join('')}</tr>
  ${D[k].map((r,i)=>`<tr><td><a class="x" onclick="ed('${k}',${i})">Edit</a><a class="x" onclick="del('${k}',${i},this)">Del</a></td>${cols.map(c=>`<td>${esc(r[c.k])}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="99" style="color:var(--mut)">No rows yet</td></tr>'}</table></div></div>`;
@@ -588,13 +617,14 @@ function home(){
  const dsum=D.daily.map(r=>`<tr><td>${esc(r.dt)}</td><td>${esc(r.tm)}</td><td>${esc(r.zn)}</td><td>${esc(r.ns)}</td><td>${esc(r.km)}</td><td>${esc(r.ck)}</td><td>${esc(r.rv)}</td></tr>`).join('');
  return `<div class="kpis">${k(R.length,'Road segments')}${k(f1(km),'Total km mapped')}${k(R.length?f1(sum(R,r=>r.w)/Math.max(1,R.filter(r=>r.w!=='').length)):'-','Avg road width m')}${k(R.filter(r=>r.parent).length,'Branch roads')}
  ${k(f1(premTot),'Premises served')}${k(f1(sum(Dr,r=>num(r.ll)+num(r.rl))),'Drain length m')}${k(Dr.filter(r=>r.lb==='Yes'||r.rb==='Yes').length,'Blocked drains')}${k(f1(sum(Co,r=>r.gv)),'GVP / dumps')}${k(f1(sum(Co,r=>r.bp)),'Burning points')}${k(Co.filter(r=>r.ap).length,'Access problems')}</div>
- <div class="card"><h2>Data checks</h2>${chk.length?chk.slice(0,40).map(c=>`<div class="warn">! ${c}</div>`).join(''):'<div class="ok">OK - No issues found'+(R.length?'':' (no data yet)')+'</div>'}</div>
+ <div class="card"><h2>Data checks</h2>${chkPickerHtml()}${chkListHtml(chk,R.length)}</div>
  <div class="card"><h2>By zone / colony</h2><div class="tw"><table><tr><th>Zone</th><th>Segs</th><th>km</th><th>Avg width</th><th>Premises</th><th>Drain m</th><th>GVPs</th><th>Burning</th></tr>${zrows||'<tr><td colspan="8">No data</td></tr>'}</table></div></div>
  <div class="card"><h2>Road type</h2>${bars(count(R,r=>r.rt))}<h2 style="margin-top:12px">Surface</h2>${bars(count(R,r=>r.sf))}<h2 style="margin-top:12px">Vehicle access</h2>${bars(count(R,r=>r.va))}</div>
  <div class="card"><h2>Drains (by side type)</h2>${bars(count([...Dr.map(r=>r.lt),...Dr.map(r=>r.rt)].map(t=>({t})),x=>x.t))}<h2 style="margin-top:12px">Drain condition (both sides)</h2>${bars(count([...Dr.map(r=>r.lc),...Dr.map(r=>r.rc)].map(t=>({t})),x=>x.t))}</div>
  <div class="card"><h2>Premises by category</h2>${bars(Object.fromEntries(PREM.map((p,i)=>[p,sum(P,r=>r['p'+i])]).filter(x=>x[1]>0)))}</div>
  <div class="card"><h2>Collection</h2>${bars(count(Co,r=>r.fr))}<h2 style="margin-top:12px">Drain/river dumping</h2>${bars(count(Co,r=>r.dr))}</div>
  <div class="card"><h2>Daily team log</h2><div class="tw"><table><tr><th>Date</th><th>Team</th><th>Zone</th><th>Segs</th><th>km</th><th>Checked</th><th>Revisit</th></tr>${dsum||'<tr><td colspan="7">No data</td></tr>'}</table></div></div>
+ ${colonyReportView()}
  ${segmentReportCard()}`}
 let REPORT_SEG='';
 function groupCompletenessLines(rootId){
@@ -622,17 +652,11 @@ function showColonyMap(rootId){
  const svg=colonyMapSVG(rootId);
  wrap.innerHTML=svg||'<p class="hint">Could not build a map for this road.</p>';
 }
-function downloadColonyMap(){
- const svg=$('#colonymapwrap svg');
- if(!svg){toast('Build the map first');return}
- const xml=illExport(svg);
- dl('DAPO100_'+(REPORT_SEG||'colony')+'_map.svg',new Blob([xml],{type:'image/svg+xml'}));
-}
 function segmentReportCard(){
  const opts=familyRoots().map(x=>`<option value="${esc(x.id)}" ${x.id===REPORT_SEG?'selected':''}>${esc(x.id)}${x.road?' - '+esc(x.road):''}</option>`).join('');
  return `<div class="card"><h2>Segment Detail Report</h2><p class="hint">Pick a main road (colony) to see its complete FS1-FS5 details, plus every intersection road surveyed off it.</p>
  <select id="segReportPick" onchange="REPORT_SEG=this.value;render()"><option value="">Select a road...</option>${opts}</select>
- ${REPORT_SEG?`<div style="margin-top:14px"><button type="button" class="btn g" onclick="showColonyMap('${esc(REPORT_SEG)}')">Build colony map</button><button type="button" class="btn g" onclick="downloadColonyMap()">Download colony map (SVG)</button></div>
+ ${REPORT_SEG?`<div style="margin-top:14px"><button type="button" class="btn g" onclick="showColonyMap('${esc(REPORT_SEG)}')">Build colony map</button><button type="button" class="btn g" onclick="downloadColonyMap('pdf',this)">Download PDF</button><button type="button" class="btn g" onclick="downloadColonyMap('jpg',this)">Download JPEG</button></div>
  <div id="colonymapwrap" style="margin-top:10px"></div>`:''}
  ${REPORT_SEG?completenessStatusHTML(REPORT_SEG)+segmentDetailBlock(REPORT_SEG,0,new Set()):''}
  </div>`;
@@ -767,6 +791,381 @@ function printNetworkReport(){
  </body></html>`);
  w.document.close();
 }
+/* ======================================================================
+   Colony PDF Report — opens in new tab (view + download)
+   A4 landscape, all sheets for the selected colony + branches
+   ====================================================================== */
+let COLONY_RPT_SEG='';
+function colonyReportView(){
+ const opts=familyRoots().map(x=>`<option value="${esc(x.id)}" ${x.id===COLONY_RPT_SEG?'selected':''}>${esc(x.id)}${x.road?' – '+esc(x.road):''}</option>`).join('');
+ return `<div class="card"><h2>Colony PDF Report</h2>
+ <p class="hint">Select a main road (colony). The report opens in a new tab — view it there and use the Download PDF button or your browser's Print → Save as PDF. All sheets (FS1–FS6), A4 landscape.</p>
+ <div class="row">
+  <select id="colRptPick" onchange="COLONY_RPT_SEG=this.value"><option value="">Select a colony...</option>${opts}</select>
+  <button type="button" class="btn" onclick="openColonyReport()">View / Download Report</button>
+ </div></div>`;
+}
+function colonyReportSegments(rootId){
+ const collect=(id,seen)=>{seen=seen||new Set();if(seen.has(id))return[];seen=new Set(seen);seen.add(id);
+  const seg=D.road.find(x=>x.id===id);if(!seg)return[];
+  let out=[seg];D.road.filter(x=>x.parent===id).forEach(ch=>{out=out.concat(collect(ch.id,seen))});return out};
+ return collect(rootId);
+}
+function rptE(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function rptCell(v){return `<td>${rptE(v??'')}</td>`}
+function rptTh(v,rs,cs){const r=rs?` rowspan="${rs}"`:'',c=cs?` colspan="${cs}"`:'';return `<th${r}${c}>${rptE(v)}</th>`}
+function rptGrpTh(v,cs){return `<th colspan="${cs}" class="gh">${rptE(v)}</th>`}
+function rptSubTh(v){return `<th class="sub">${rptE(v)}</th>`}
+function rptBranchClass(seg){return seg.parent?'br':'sid'}
+function rptCompletenessPage(segs,rootSeg,logoSrc,now){
+ const rows=segs.map(seg=>{
+  const hasPrem=D.prem.some(x=>x.id===seg.id),hasDrain=D.drain.some(x=>x.id===seg.id),
+        hasColl=D.coll.some(x=>x.id===seg.id),hasSketch=D.sketch.some(x=>x.id===seg.id);
+  const tick=ok=>`<td class="${ok?'ok':'miss'}">${ok?'✓':'✗'}</td>`;
+  const miss=[!hasPrem&&'FS2',!hasDrain&&'FS3',!hasColl&&'FS4',!hasSketch&&'FS5'].filter(Boolean);
+  return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:14px"':''}><b>${rptE(seg.id)}</b></td>
+   <td>${rptE(seg.road||'')}</td><td>${rptE(seg.zone||'')}</td><td>${rptE(seg.parent||'—')}</td>
+   <td class="ok">✓</td>${tick(hasPrem)}${tick(hasDrain)}${tick(hasColl)}${tick(hasSketch)}
+   <td class="${miss.length?'miss':'ok'}">${miss.length?miss.join(', '):'All complete'}</td></tr>`;
+ }).join('');
+ // FS1 table
+ const fs1rows=segs.map(seg=>`<tr>
+  <td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td>
+  ${['a','b','parent','zone','road','kmm','so','eo','len','w','me','rt','sf','va','ph','ct','slat','slng','elat','elng','er'].map(k=>rptCell(seg[k])).join('')}
+ </tr>`).join('');
+ return `<div class="page">
+  ${rptPageHeader(rootSeg,logoSrc,'Completeness &amp; FS1 – Road Segments','All segments · A4 Landscape',2,now)}
+  <div class="sh">Completeness Summary</div>
+  <table class="st"><tr>${rptTh('Seg ID',2)}${rptTh('Road',2)}${rptTh('Zone',2)}${rptTh('Branch of',2)}${rptTh('FS1',2)}${rptTh('FS2',2)}${rptTh('FS3',2)}${rptTh('FS4',2)}${rptTh('FS5',2)}${rptTh('Missing / Notes',2)}</tr>${rows}</table>
+  <div class="sh">FS1 – Road Segments</div>
+  <div class="ow"><table class="st"><tr>
+   ${rptTh('Seg ID',2)}${rptTh('Point A',2)}${rptTh('Point B',2)}${rptTh('Branch of',2)}${rptTh('Zone',2)}${rptTh('Road',2)}
+   ${rptGrpTh('Measurement',5)}${rptGrpTh('Character',3)}
+   ${rptTh('Vehicle Access',2)}${rptTh('M/E',2)}${rptTh('Photo',2)}${rptTh('Leads to',2)}${rptTh('Start lat',2)}${rptTh('Start lng',2)}${rptTh('End lat',2)}${rptTh('End lng',2)}${rptTh('End reached',2)}
+  </tr><tr>
+   ${rptSubTh('Km Method')}${rptSubTh('Start Odo')}${rptSubTh('End Odo')}${rptSubTh('Length km')}${rptSubTh('Width m')}
+   ${rptSubTh('Type')}${rptSubTh('Surface')}${rptSubTh('Condition')}
+  </tr>${fs1rows}</table></div>
+  ${rptPageFooter(rootSeg,2)}
+ </div>`;
+}
+function rptFS2Page(segs,rootSeg,logoSrc,now){
+ const rows=segs.map(seg=>{
+  const p=D.prem.find(x=>x.id===seg.id)||null;
+  if(!p)return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td><td colspan="16" class="miss">FS2 not yet entered</td></tr>`;
+  const cells=PREM.map((_,i)=>rptCell(p['p'+i])).join('');
+  const tot=`<td style="font-weight:700">${rptE(p.tot??'')}</td>`;
+  return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td>${cells}${tot}</tr>`;
+ }).join('');
+ const totRow=(()=>{const sums=PREM.map((_,i)=>segs.reduce((s,seg)=>{const p=D.prem.find(x=>x.id===seg.id);return s+num(p&&p['p'+i])},0));
+  const tot=segs.reduce((s,seg)=>{const p=D.prem.find(x=>x.id===seg.id);return s+num(p&&p.tot)},0);
+  return `<tr style="background:#eef2ea;font-weight:700"><td>Colony Total</td>${sums.map(v=>`<td>${v||''}</td>`).join('')}<td style="background:#d8e8cc">${tot}</td></tr>`;
+ })();
+ return `<div class="page">
+  ${rptPageHeader(rootSeg,logoSrc,'FS2 – Service Unit Counts','Derived from FS5 walking order · A4 Landscape',3,now)}
+  <div class="sh">FS2 – Service Unit Counts <span class="sh-tag">all columns</span></div>
+  <div class="ow"><table class="st"><tr>
+   ${rptTh('Seg ID',2)}${rptGrpTh('Residential / Commercial',4)}${rptGrpTh('Commercial Complex',4)}${rptGrpTh('Institutions',6)}${rptTh('Other',2)}${rptTh('TOTAL',2)}
+  </tr><tr>
+   ${['Houses','Shops','Rest./ Dhaba','Hotel/ Homestay','Complexes','No. Floors','Units','Floors UC','School/ College','Hospital/ Clinic','Govt Office','Relig/ Comm','Market','Garage/ Wksh'].map(rptSubTh).join('')}
+  </tr>${rows}${totRow}</table></div>
+  <p style="font-size:6pt;color:#8a9690;margin-top:4px;font-style:italic">* Total = Houses + Shops + Rest./Dhaba + Hotel/Homestay + Units in Complex + Institutions + Other. Complex count and floor counts excluded from Total.</p>
+  ${rptPageFooter(rootSeg,3)}
+ </div>`;
+}
+function rptFS3Page(segs,rootSeg,logoSrc,now){
+ const rows=segs.map(seg=>{
+  const d=D.drain.find(x=>x.id===seg.id)||null;
+  if(!d)return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td><td colspan="16" class="miss">FS3 not yet entered</td></tr>`;
+  return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td>
+   ${['ld','lt','ll','lw','lc','lb','lo','rd','rt','rl','rw','rc','rb','ro','ph','rm'].map(k=>rptCell(d[k])).join('')}</tr>`;
+ }).join('');
+ return `<div class="page">
+  ${rptPageHeader(rootSeg,logoSrc,'FS3 – Drain / Gutter Mapping','Left/Right based on travelling A→B · A4 Landscape',4,now)}
+  <div class="sh">FS3 – Drain / Gutter Mapping <span class="sh-tag">all columns</span></div>
+  <div class="ow"><table class="st"><tr>
+   ${rptTh('Seg ID',2)}${rptGrpTh('Left Side (A → B)',7)}${rptGrpTh('Right Side (A → B)',7)}${rptTh('Photo',2)}${rptTh('Remarks',2)}
+  </tr><tr>
+   ${['Drain?','Type','Len m','Width m','Condition','Blocked?','Outfall'].map(rptSubTh).join('')}
+   ${['Drain?','Type','Len m','Width m','Condition','Blocked?','Outfall'].map(rptSubTh).join('')}
+  </tr>${rows}</table></div>
+  ${rptPageFooter(rootSeg,4)}
+ </div>`;
+}
+function rptFS4Page(segs,rootSeg,logoSrc,now){
+ const rows=segs.map(seg=>{
+  const c=D.coll.find(x=>x.id===seg.id)||null;
+  if(!c)return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td><td colspan="11" class="miss">FS4 not yet entered</td></tr>`;
+  return `<tr><td class="${rptBranchClass(seg)}" ${seg.parent?'style="padding-left:12px"':''}><b>${rptE(seg.id)}</b></td>
+   ${['ex','fr','vh','cp','gv','bp','dr','ap','tc','ph','fn'].map(k=>rptCell(c[k])).join('')}</tr>`;
+ }).join('');
+ // KPI boxes
+ const kpi=(v,lbl,warn)=>`<div style="border:1px solid #c7cdc8;border-radius:3px;padding:5px 8px;text-align:center;background:#fafcf9">
+  <div style="font-size:14pt;font-weight:700;color:${warn&&v>0?'#B4302A':'#2f3833'}">${v}</div>
+  <div style="font-size:5.5pt;color:#5c6b63">${lbl}</div></div>`;
+ const allC=D.coll.filter(c=>segs.some(s=>s.id===c.id));
+ const kpis=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:6px">
+  ${kpi(allC.reduce((s,c)=>s+num(c.cp),0),'Collection Points',false)}
+  ${kpi(allC.reduce((s,c)=>s+num(c.gv),0),'GVP / Dump Points',true)}
+  ${kpi(allC.reduce((s,c)=>s+num(c.bp),0),'Burning Points',true)}
+  ${kpi(allC.filter(c=>c.dr==='Yes').length,'Drain/River Dumps',true)}
+  ${kpi(allC.filter(c=>c.ap&&c.ap.trim()).length,'Access Problems',true)}
+  ${kpi(allC.filter(c=>c.ex==='Yes').length,'Segs with Collection',false)}
+ </div>`;
+ return `<div class="page">
+  ${rptPageHeader(rootSeg,logoSrc,'FS4 – Collection Access &amp; Waste Hotspots','GVP and Burning counts derived from FS5 · A4 Landscape',5,now)}
+  <div class="sh">FS4 – Collection Access &amp; Waste Hotspots <span class="sh-tag">all columns</span></div>
+  <div class="ow"><table class="st"><tr>
+   ${['Seg ID','Collection?','Frequency','Vehicle','Coll. Points','GVP/Dump (FS5)','Burning Pts (FS5)','Drain/River Dump?','Access Problem','Turn/Stop','Photo','Field Notes'].map(v=>rptTh(v)).join('')}
+  </tr>${rows}</table></div>${kpis}
+  ${rptPageFooter(rootSeg,5)}
+ </div>`;
+}
+function rptFS5Pages(segs,rootSeg,logoSrc,now,totalPages){
+ // 2 FS5 sheets per page, side by side
+ let pages='',pageNum=6;
+ for(let i=0;i<segs.length;i+=2){
+  const pair=segs.slice(i,i+2);
+  const sheets=pair.map(seg=>{
+   const sk=D.sketch.find(x=>x.id===seg.id);
+   const rd=D.road.find(x=>x.id===seg.id)||{};
+   if(!sk)return `<div class="fs5"><div class="fs5-bar">FIELD SHEET 5 – SEGMENT SKETCH &amp; PREMISES TALLY <span>HIMALAYAN FRINGES PROJECT / DAPORIJO CLEAN TOWN MISSION</span></div>
+    <div class="fs5-hdr" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
+     <div class="fs5-hc"><span class="lbl">Segment ID</span><span class="val">${rptE(seg.id)}</span></div>
+     <div class="fs5-hc"><span class="lbl">Zone</span><span class="val">${rptE(seg.zone||'')}</span></div>
+     <div class="fs5-hc"><span class="lbl">Road</span><span class="val">${rptE(seg.road||'')}</span></div>
+     <div class="fs5-hc"><span class="lbl">Point A</span><span class="val">${rptE(rd.a||'')}</span></div>
+     <div class="fs5-hc"><span class="lbl">Point B</span><span class="val">${rptE(rd.b||'')}</span></div>
+     <div class="fs5-hc"><span class="lbl">Team</span><span class="val">—</span></div>
+    </div>
+    <div style="padding:16px;text-align:center;color:#8a9690;font-size:7pt">FS5 not yet entered for this segment</div></div>`;
+   // tally rows — built-in TALLY + cxun/cxfl/cxuc
+   const tallyRows=TALLY.map((label,i)=>{
+    const lv=sk['l'+i]??0,rv=sk['r'+i]??0,tv=sk['t'+i]??0;
+    let note='';
+    if(i===3){note=`${sk.cxun||0} units · ${sk.cxfl||0} floors${sk.cxuc>0?' · '+sk.cxuc+' UC':''}`}
+    return `<tr><td class="lbl">${rptE(label)}</td><td>${lv}</td><td>${rv}</td><td class="tot">${tv}</td><td style="text-align:left;font-size:5.5pt;padding:2px 4px;color:#5c6b63">${note}</td></tr>`;
+   }).join('');
+   // custom types not in TALLY but present in sketch
+   const customRows=(()=>{
+    const builtIn=new Set(TALLY);
+    let items=[];try{items=[...JSON.parse(sk.seql||'[]'),...JSON.parse(sk.seqr||'[]')]}catch(e){}
+    const cmap={};
+    items.forEach(it=>{if(!builtIn.has(it.t)&&it.t!=='__intersection__'){const pt=(D.ptypes||[]).find(x=>x.name===it.t);const key=it.t+(pt?` → ${pt.fs2}`:'');cmap[key]=(cmap[key]||0)+1}});
+    return Object.entries(cmap).map(([k,v])=>`<tr style="background:#fff8e6"><td class="lbl" style="color:#8a6a00">${rptE(k)}</td><td colspan="2" style="color:#8a6a00">—</td><td class="tot" style="color:#8a6a00">${v}</td><td style="font-size:5.5pt;color:#8a6a00;text-align:left;padding:2px 4px">custom</td></tr>`).join('');
+   })();
+   const grandL=TALLY.reduce((s,_,i)=>s+num(sk['l'+i]),0);
+   const grandR=TALLY.reduce((s,_,i)=>s+num(sk['r'+i]),0);
+   const grandT=TALLY.reduce((s,_,i)=>s+num(sk['t'+i]),0);
+   return `<div class="fs5">
+    <div class="fs5-bar">FIELD SHEET 5 – SEGMENT SKETCH &amp; PREMISES TALLY <span>HIMALAYAN FRINGES PROJECT / DAPORIJO CLEAN TOWN MISSION</span></div>
+    <div class="fs5-hdr" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
+     <div class="fs5-hc"><span class="lbl">Segment ID</span><span class="val">${rptE(seg.id)}</span></div>
+     <div class="fs5-hc"><span class="lbl">Zone / Colony</span><span class="val">${rptE(sk.zone||rd.zone||'')}</span></div>
+     <div class="fs5-hc"><span class="lbl">Road</span><span class="val">${rptE(sk.road||rd.road||'')}</span></div>
+     <div class="fs5-hc"><span class="lbl">Point A</span><span class="val">${rptE(sk.a||rd.a||'')}</span></div>
+     <div class="fs5-hc"><span class="lbl">Point B</span><span class="val">${rptE(sk.b||rd.b||'')}</span></div>
+     <div class="fs5-hc"><span class="lbl">Team</span><span class="val">${rptE(sk.team||'')}</span></div>
+    </div>
+    <div class="fs5-body">
+     <div class="fs5-sk">
+      <div class="fs5-sk-lbl">ROAD SKETCH – mark A/B, direction, left/right, drains, premises, GVPs, collection points and access constraints <em>Not to scale</em></div>
+      <div class="fs5-rd">${rptE(sk.sk||'')}</div>
+     </div>
+     <div><table class="fst">
+      <tr><th class="th-l">Premise / Feature</th><th class="th-c">LEFT</th><th class="th-c">RIGHT</th><th class="th-c">TOTAL</th><th class="th-c" style="background:#1a2420;width:28%">Notes</th></tr>
+      ${tallyRows}${customRows}
+      <tr class="grand"><td class="lbl">TOTAL (built-in)</td><td>${grandL}</td><td>${grandR}</td><td>${grandT}</td><td></td></tr>
+     </table></div>
+    </div>
+    <div class="fs5-leg"><b>Legend:</b><span>[H] House</span><span>[SHOP] Shop</span><span>[DHABA] Restaurant</span><span>[GVP*] Dump/Burning</span><span>[COMMERCIAL COMPLEX: details]</span><span>[SCHOOL] Institution</span><span>→ Survey direction A to B</span></div>
+    <div class="fs5-nt"><div class="nl">${sk.nt?rptE(sk.nt):'Simple sketch rule: Draw one road line, mark Point A and Point B, add an arrow A→B, then place important features roughly on the correct left/right side.'}</div></div>
+   </div>`;
+  }).join('');
+  const pn=pageNum++;
+  pages+=`<div class="page">
+   ${rptPageHeader(rootSeg,logoSrc,'FS5 – Segment Sketch &amp; Premises Tally','Field-sheet format · '+(pair.map(s=>s.id).join(' &amp; '))+' · A4 Landscape',pn,now)}
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">${sheets}</div>
+   ${rptPageFooter(rootSeg,pn)}
+  </div>`;
+ }
+ return pages;
+}
+function rptFS6Page(segs,rootSeg,logoSrc,now,pageNum){
+ const rows=D.daily.filter(r=>r.zn&&segs.some(s=>s.zone&&r.zn===s.zone)).map(r=>
+  `<tr>${['dt','tm','zn','ss','es','ns','km','su','ck','rv','sn'].map(k=>rptCell(r[k])).join('')}</tr>`).join('');
+ return `<div class="page">
+  ${rptPageHeader(rootSeg,logoSrc,'FS6 – Daily Team &amp; Route Control','Supervisor control log · A4 Landscape',pageNum,now)}
+  <div class="sh">FS6 – Daily Team &amp; Route Control</div>
+  <table class="st"><tr>
+   ${['Date','Team','Zone','Start Seg.','End Seg.','No. Segs','Approx km','Sheets Used','Checked?','Revisit?','Supervisor Notes'].map(v=>rptTh(v)).join('')}
+  </tr>${rows||`<tr><td colspan="11" class="miss">No FS6 entries matching this colony's zone</td></tr>`}</table>
+  ${rptPageFooter(rootSeg,pageNum)}
+ </div>`;
+}
+function rptIllusPage(rootSeg,logoSrc,now,pageNum,segs){
+ const illCards=segs.map(seg=>`<div>
+  <div class="sh" style="margin-bottom:5px">${rptE(seg.id)} – ${rptE(seg.road||'Road Illustration')}</div>
+  <div class="illus-ph" style="min-height:60px">
+   <b>Road Illustration · ${rptE(seg.id)}${seg.road?' · '+rptE(seg.road):''}</b>
+   <p>Build in the app (FS5 → Build illustration), then download separately: A4 portrait or A3 landscape</p>
+  </div></div>`).join('');
+ return `<div class="page">
+  ${rptPageHeader(rootSeg,logoSrc,'Colony Map &amp; Road Illustrations','Optional section · illustrations built and downloaded from the app · A4 Landscape',pageNum,now)}
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:9px;margin-bottom:8px">
+   <div>
+    <div class="sh" style="margin-bottom:5px">Colony Map</div>
+    <div class="col-ph" style="min-height:120px">
+     <b>Colony Map · ${rptE(rootSeg.id)}</b>
+     <p style="font-size:7pt;color:#5c6b63;margin-top:4px">Build in the app (Reports → Build colony map), then download A4 or A3</p>
+     <p style="font-size:6pt;color:#8a9690;margin-top:5px">${segs.filter(s=>s.parent).length} branch road(s)</p>
+    </div>
+   </div>
+   <div style="display:grid;grid-template-columns:${segs.length>1?'1fr 1fr':'1fr'};gap:8px">${illCards}</div>
+  </div>
+  ${rptPageFooter(rootSeg,pageNum)}
+ </div>`;
+}
+function rptPageHeader(rootSeg,logoSrc,title,sub,pageNum,now){
+ return `<div class="ph">
+  <img src="${logoSrc}" class="ph-logo" alt="VPS logo">
+  <div class="ph-text"><h1>${title}</h1><p>Colony: ${rptE(rootSeg.zone||'')} · ${rptE(rootSeg.id)}${rootSeg.road?' – '+rptE(rootSeg.road):''} · ${sub}</p></div>
+  <div class="ph-right"><b>Page ${pageNum}</b><br>${now}</div>
+ </div>`;
+}
+function rptPageFooter(rootSeg,pageNum){
+ return `<div class="pgf">
+  <span>DAPO 100 · Road, Drainage &amp; Service-Unit Mapping · Colony: ${rptE(rootSeg.zone||'')} (${rptE(rootSeg.id)}) · Vivekananda Public School (prototype)</span>
+  <span>Page ${pageNum}</span>
+ </div>`;
+}
+function openColonyReport(){
+ const rootId=$('#colRptPick')&&$('#colRptPick').value||COLONY_RPT_SEG;
+ if(!rootId){toast('Select a colony first');return}
+ const rootSeg=D.road.find(x=>x.id===rootId);
+ if(!rootSeg){toast('Colony not found');return}
+ const segs=colonyReportSegments(rootId);
+ const now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+ const logoSrc=document.getElementById('logoimg')?document.getElementById('logoimg').src:'';
+ const totalKm=segs.reduce((s,r)=>s+num(r.len),0);
+ const totalPrem=D.prem.filter(p=>segs.some(s=>s.id===p.id)).reduce((s,p)=>s+num(p.tot),0);
+ const teams=[...new Set(D.sketch.filter(sk=>segs.some(s=>s.id===sk.id)).map(sk=>sk.team).filter(Boolean))].join(', ');
+ const fs5pages=rptFS5Pages(segs,rootSeg,logoSrc,now);
+ const fs5pageCount=Math.ceil(segs.length/2);
+ const fs6pageNum=6+fs5pageCount;
+ const illusPageNum=fs6pageNum+1;
+ const totalPages=illusPageNum;
+ // Cover TOC
+ const tocRows=[
+  ['1','Cover'],['2','Completeness + FS1 – Road Segments'],['3','FS2 – Service Unit Counts'],
+  ['4','FS3 – Drain / Gutter Mapping'],['5','FS4 – Access Hotspots'],
+  ...Array.from({length:fs5pageCount},(_,i)=>[String(6+i),'FS5 – Sketch & Tally'+(fs5pageCount>1?` (part ${i+1})`:'')]),
+  [String(fs6pageNum),'FS6 – Daily Control'],
+  [String(illusPageNum),'Colony Map & Illustrations'],
+ ].map(([p,t])=>`<tr><td>${rptE(t)}</td><td>${p}</td></tr>`).join('');
+ const coverPage=`<div class="page">
+  <div class="cov-band">
+   <h1>DAPO 100 – Colony Survey Report</h1>
+   <h2>Road, Drainage &amp; Service-Unit Mapping · ${rptE(rootSeg.zone||'')} Colony · ${rptE(rootId)}</h2>
+   <p>Himalayan Fringes Project | Daporijo Clean Town Mission | Vivekananda Public School, Daporijo</p>
+  </div>
+  <div class="cov-cols">
+   <div class="cov-box"><h3>Colony</h3>
+    <p><span class="k">Main Road:</span> ${rptE(rootId)}${rootSeg.road?' – '+rptE(rootSeg.road):''}</p>
+    <p><span class="k">Zone:</span> ${rptE(rootSeg.zone||'—')}</p>
+    <p><span class="k">Branch roads:</span> ${segs.filter(s=>s.parent).length}</p>
+    <p><span class="k">Total segments:</span> ${segs.length}</p>
+    <p><span class="k">Total length:</span> ${f1(totalKm)} km</p>
+    <p><span class="k">Total premises:</span> ${f1(totalPrem)}</p>
+   </div>
+   <div class="cov-box"><h3>Survey</h3>
+    <p><span class="k">Team(s):</span> ${rptE(teams||'—')}</p>
+    <p><span class="k">Generated:</span> ${now}</p>
+    <p><span class="k">Sheets:</span> FS1 · FS2 · FS3 · FS4 · FS5 · FS6</p>
+    <p><span class="k">Points:</span> ${rptE(rootSeg.a||'A')} → ${rptE(rootSeg.b||'B')}</p>
+    <p><span class="k">Affiliation:</span> CBSE No. 2230086 · School Code 35085</p>
+   </div>
+   <div class="cov-box toc"><h3>Contents</h3><table>${tocRows}</table></div>
+  </div>
+  <div class="pgf">
+   <span>DAPO 100 · Road, Drainage &amp; Service-Unit Mapping · Vivekananda Public School, Daporijo, Upper Subansiri District, Arunachal Pradesh</span>
+   <span>Page 1</span>
+  </div>
+ </div>`;
+ const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+ <title>DAPO 100 – Colony Report · ${rptE(rootId)}</title>
+ <style>
+ *{box-sizing:border-box;margin:0;padding:0}
+ body{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;color:#1a2420;background:#d8d8d8}
+ .page{width:297mm;min-height:210mm;margin:6mm auto;background:#fff;padding:9mm 10mm 13mm;page-break-after:always;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+ @media print{@page{size:A4 landscape;margin:0}body{background:#fff}.page{margin:0;box-shadow:none;page-break-after:always}}
+ .ph{display:flex;align-items:center;gap:8px;border-bottom:2.5px solid #2f3833;padding-bottom:5px;margin-bottom:7px}
+ .ph-logo{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;background:#fff;border:1px solid #e0e0e0}
+ .ph-text h1{font-size:9.5pt;font-weight:700;color:#2f3833;line-height:1.2}.ph-text p{font-size:6.5pt;color:#5c6b63;margin-top:1px}
+ .ph-right{margin-left:auto;text-align:right;font-size:6pt;color:#5c6b63;line-height:1.6}.ph-right b{color:#2f3833;font-size:7pt}
+ .cov-band{background:#2f3833;color:#fff;padding:14px 18px;border-radius:3px;margin-bottom:10px}
+ .cov-band h1{font-size:15pt;font-weight:700}.cov-band h2{font-size:10pt;font-weight:400;opacity:.82;margin-top:3px}.cov-band p{font-size:7pt;opacity:.6;margin-top:5px}
+ .cov-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+ .cov-box{border:1px solid #c7cdc8;border-radius:3px;padding:7px 10px}
+ .cov-box h3{font-size:6.5pt;font-weight:700;color:#2f3833;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #e5e9e6;padding-bottom:3px;margin-bottom:5px}
+ .cov-box p{font-size:7.5pt;line-height:1.7}.cov-box .k{color:#5c6b63;font-size:7pt}
+ .toc table{width:100%;border-collapse:collapse}.toc td{padding:2px 5px;font-size:7pt;border-bottom:1px solid #f0f0f0}.toc td:last-child{text-align:right;color:#8a9690;white-space:nowrap}.toc tr:last-child td{border-bottom:none}
+ .sh{background:#2f3833;color:#fff;font-size:7.5pt;font-weight:700;padding:3px 8px;margin-bottom:4px;display:flex;align-items:center;gap:6px;border-radius:2px}
+ .sh-tag{background:rgba(255,255,255,.15);padding:1px 6px;border-radius:10px;font-size:6pt;font-weight:400}
+ .ow{overflow-x:auto}
+ .st{width:100%;border-collapse:collapse;font-size:6.5pt;margin-bottom:8px}
+ .st th{background:#eef2ea;color:#2f3833;font-weight:700;font-size:5.8pt;text-transform:uppercase;letter-spacing:.2px;border:1px solid #c7cdc8;padding:2.5px 4px;white-space:nowrap;text-align:center}
+ .st th.gh{background:#2f3833;color:#fff;text-align:center;border:1px solid #1a2420;font-size:5.8pt}
+ .st th.sub{background:#dce6d8;color:#2f3833;text-align:center;border:1px solid #c7cdc8;font-size:5.8pt}
+ .st td{border:1px solid #c7cdc8;padding:2.5px 4px;white-space:nowrap;font-size:6.5pt}
+ .st tr:nth-child(even) td{background:#f8faf7}.sid{font-weight:700;color:#2f3833}.br{padding-left:12px;color:#5c6b63}.miss{color:#B4302A;font-style:italic;font-size:6pt}.ok{color:#1D9E75;font-weight:700}
+ .cpt td{text-align:center}.cpt td.tl{text-align:left}
+ .fs5{border:1.5px solid #2f3833;border-radius:2px;page-break-inside:avoid}
+ .fs5-bar{background:#2f3833;color:#fff;padding:3px 8px;font-size:7.5pt;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+ .fs5-bar span{font-size:6pt;font-weight:400;opacity:.8}
+ .fs5-hdr{display:grid;border-bottom:1.5px solid #2f3833}
+ .fs5-hc{padding:3px 6px;border-right:1px solid #c7cdc8;font-size:6pt}.fs5-hc:last-child{border-right:none}
+ .fs5-hc .lbl{color:#5c6b63;font-size:5.5pt;font-weight:700;text-transform:uppercase;display:block;margin-bottom:1px}.fs5-hc .val{font-weight:700;font-size:7.5pt;color:#1a2420}
+ .fs5-body{display:grid;grid-template-columns:1.1fr 0.9fr;border-bottom:1px solid #c7cdc8}
+ .fs5-sk{border-right:1.5px solid #2f3833;padding:5px 7px}
+ .fs5-sk-lbl{font-size:5.5pt;font-weight:700;color:#5c6b63;text-transform:uppercase;margin-bottom:3px;display:flex;gap:8px;align-items:center}
+ .fs5-sk-lbl em{background:#e5e9e6;padding:1px 5px;border-radius:10px;font-weight:400;font-style:normal;font-size:5pt;color:#2f3833}
+ .fs5-rd{font-family:monospace;font-size:6.5pt;line-height:1.55;background:#fff;border:1px solid #dce6d8;padding:4px 5px;border-radius:2px;white-space:pre-wrap;word-break:break-word;min-height:52px}
+ .fst{width:100%;border-collapse:collapse;font-size:6.5pt}
+ .fst th.th-l{background:#2f3833;color:#fff;padding:3px 6px;font-size:6pt;text-align:left;border:1px solid #1a2420;width:44%}
+ .fst th.th-c{background:#2f3833;color:#fff;padding:3px 4px;font-size:6pt;text-align:center;border:1px solid #1a2420}
+ .fst td{border:1px solid #c7cdc8;padding:3px 4px;text-align:center;font-size:6.5pt}.fst td.lbl{text-align:left;font-weight:600;padding-left:7px}.fst td.tot{font-weight:700;background:#eef2ea}
+ .fst tr:nth-child(even) td{background:#f8faf7}.fst tr:nth-child(even) td.tot{background:#e2ead8}.fst tr.grand td{background:#d8e8cc;font-weight:700;font-size:7pt}
+ .fs5-leg{border-top:1.5px solid #2f3833;padding:3px 7px;font-size:5.5pt;color:#5c6b63;display:flex;flex-wrap:wrap;gap:2px 12px}.fs5-leg b{color:#1a2420}
+ .fs5-nt{border-top:1px solid #c7cdc8;padding:3px 7px;font-size:6pt;min-height:16px;background:#fafcf9}
+ .fs5-nt .nl{font-size:5pt;font-weight:700;color:#8a9690;text-transform:uppercase;margin-bottom:1px}
+ .illus-ph{border:1.5px dashed #c7cdc8;border-radius:3px;padding:12px;text-align:center;color:#8a9690;font-size:7pt;background:#fafcf9}
+ .illus-ph b{display:block;font-size:8.5pt;color:#5c6b63;margin-bottom:3px}
+ .col-ph{border:1.5px dashed #2f3833;border-radius:3px;padding:18px;text-align:center;background:#f4f7f2}
+ .col-ph b{font-size:9pt;color:#2f3833;display:block;margin-bottom:3px}
+ .pgf{position:absolute;bottom:7mm;left:10mm;right:10mm;font-size:5.5pt;color:#8a9690;display:flex;justify-content:space-between;border-top:1px solid #e5e9e6;padding-top:3px}
+ .dl-bar{background:#2f3833;color:#fff;padding:8px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:99;font-size:11pt;font-weight:700}
+ .dl-bar button{background:#fff;color:#2f3833;border:none;padding:7px 18px;border-radius:6px;font-size:11pt;font-weight:700;cursor:pointer}
+ </style></head><body>
+ <div class="dl-bar">
+  <img src="${logoSrc}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;background:#fff">
+  DAPO 100 – Colony Report · ${rptE(rootSeg.zone||'')} · ${rptE(rootId)}
+  <button onclick="window.print()">⬇ Download PDF</button>
+  <span style="font-size:9pt;opacity:.7">Print → Save as PDF · A4 landscape</span>
+ </div>
+ ${coverPage}
+ ${rptCompletenessPage(segs,rootSeg,logoSrc,now)}
+ ${rptFS2Page(segs,rootSeg,logoSrc,now)}
+ ${rptFS3Page(segs,rootSeg,logoSrc,now)}
+ ${rptFS4Page(segs,rootSeg,logoSrc,now)}
+ ${fs5pages}
+ ${rptFS6Page(segs,rootSeg,logoSrc,now,fs6pageNum)}
+ ${rptIllusPage(rootSeg,logoSrc,now,illusPageNum,segs)}
+ </body></html>`;
+ const w=window.open('','_blank');
+ if(!w){toast('Pop-up blocked — allow pop-ups for this site to open the report');return}
+ w.document.write(html);w.document.close();
+}
 function exportView(){return `<div class="card"><h2>Export</h2>
  <div class="row"><button class="btn" onclick="xlsx()">Download Excel (.xlsx)</button></div>
  <p class="hint" style="margin-top:4px">Includes a "Network Report" sheet: every main road grouped with its intersection roads, all FS1-FS5 fields combined.</p>
@@ -791,7 +1190,8 @@ function render(){
   return;
  }
  $('#main').innerHTML=view;
-  if(['prem','drain','coll','sketch'].includes(tab)&&$('#f_id')&&$('#f_id').value)refreshAuto(tab);
+  if(FORCE_LOAD){FORCE_LOAD=false;if(autoLoadExisting(tab))return}
+ if(['prem','drain','coll','sketch'].includes(tab)&&$('#f_id')&&$('#f_id').value)refreshAuto(tab);
 }
 
 /* ---------- load ---------- */
@@ -815,6 +1215,7 @@ async function load(){
  try{
   const names=[...KEYS.map(k=>SH[k].n),...ADMIN_KEYS.map(k=>SH[k].n)];
   const R=await gs('getAll',names);
+  if(!Array.isArray(R))throw new Error((R&&R.msg)||'the server sent an unexpected reply');
   [...KEYS,...ADMIN_KEYS].forEach((k,i)=>{const cs=SH[k].c;D[k]=(R[i]||[]).map((row,ri)=>{const o={};cs.forEach((c,ci)=>o[c.k]=row[ci]??'');o._id=row[cs.length];o._t=ri;return o})});
   D._loaded=true;
  }catch(e){toast('Sync error: '+(e.message||e))}
@@ -882,6 +1283,7 @@ async function tagAction(mode,btn){
  if(!canEdit('road')){blockedToast('road');return}
  const note=fv('wi_note'),lat=fv('wi_lat'),lng=fv('wi_lng');
  if((lat==='')!==(lng==='')){toast('Enter both latitude and longitude, or leave both blank');return}
+ const ce=coordError(lat,lng);if(ce){toast(ce);return}
  if(mode!=='new'&&!activeSeg()){toast('Open a road first');return}
  TAGGING_IN_PROGRESS=true;
  try{
@@ -935,7 +1337,7 @@ function lengthBlockHtml(seg){
  const walking=WALK.on&&WALK.id===seg.id;
  return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><b style="font-size:13px">Length</b>
  <div class="grid">
-  <label>Length km (type the measured value any time)<input id="rd_len" type="number" step="any" value="${esc(seg.len==null?'':seg.len)}"></label>
+  <label>Length km (type the measured value any time)<input id="rd_len" type="number" min="0" step="any" value="${esc(seg.len==null?'':seg.len)}"></label>
   <label>How it was measured<input id="rd_kmm" readonly value="${esc(seg.kmm||'')}" placeholder="not set yet"></label>
  </div>
  ${walking?`<p class="hint" id="walkstat" style="font-weight:600">${esc(walkStatText())}</p>
@@ -957,7 +1359,7 @@ function activeRoadCard(seg){
   ${pending?`<button type="button" class="btn" onclick="tagAction('finish',this)">This is the end of ${esc(seg.id)}</button>`:''}
   <button type="button" class="btn${pending?' g':''}" onclick="tagAction('junction',this)">This is a junction / side road</button>
  </div>
- <p class="hint" style="margin-top:14px"><a onclick="LAST_SEGMENT='';render()" style="cursor:pointer;color:var(--acc)">Switch to a different road</a></p>
+ <div class="row" style="margin-top:12px"><button type="button" class="btn g sm" onclick="LAST_SEGMENT='';render()">Switch to a different road</button></div>
  </div>
  <div class="card"><h2>Road details (optional, fill in anytime)</h2>
  <div class="grid">
@@ -966,7 +1368,7 @@ function activeRoadCard(seg){
   <label>Road Type<input id="rd_rt" list="dl_rd_rt" value="${esc(seg.rt||'')}"><datalist id="dl_rd_rt">${growList(['Main','Secondary','Lane','Internal'],r=>r.rt).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
   <label>Surface<input id="rd_sf" list="dl_rd_sf" value="${esc(seg.sf||'')}"><datalist id="dl_rd_sf">${growList(['Paved','Unpaved','Mixed'],r=>r.sf).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
   <label>Vehicle Access<input id="rd_va" list="dl_rd_va" value="${esc(seg.va||'')}"><datalist id="dl_rd_va">${growList(['Small pickup','Large truck','Two-wheeler only','Handcart only','None'],r=>r.va).map(o=>`<option>${esc(o)}</option>`).join('')}</datalist></label>
-  <label>Width m<input id="rd_w" type="number" step="any" value="${esc(seg.w==null?'':seg.w)}"></label>
+  <label>Width m<input id="rd_w" type="number" min="0" step="any" value="${esc(seg.w==null?'':seg.w)}"></label>
   <label class="wide">Connects to / Leads to<input id="rd_ct" value="${esc(seg.ct||'')}"></label>
   <label>${esc(letterOf(seg.a))} landmark<input id="rd_pa" value="${esc(landmarkOf(seg.a))}"></label>
   <label>${esc(letterOf(seg.b))} landmark<input id="rd_pb" value="${esc(landmarkOf(seg.b))}"></label>
@@ -1162,7 +1564,7 @@ function seqBarHtml(){
 }
 function insBannerHtml(){
  if(!SEQ_INS)return '';
- return `<div id="insbar" class="hint" style="margin-top:8px;font-weight:600;color:var(--acc)">New items on the ${SEQ_INS.side==='l'?'LEFT':'RIGHT'} are going in after item #${SEQ_INS.i+1}. <a onclick="SEQ_INS=null;renderSeqUI()" style="cursor:pointer;text-decoration:underline">Add at the end again</a></div>`;
+ return `<div id="insbar" class="hint" style="margin-top:8px;font-weight:600;color:var(--acc)">New items on the ${SEQ_INS.side==='l'?'LEFT':'RIGHT'} are going in after item #${SEQ_INS.i+1}. <button type="button" class="btn g sm" onclick="SEQ_INS=null;renderSeqUI()">Add at the end again</button></div>`;
 }
 function seqViewHtml(){return insBannerHtml()+`<div style="margin-top:10px"><b style="font-size:12px">LEFT:</b><br>${chipsHtml('l')}</div><div style="margin-top:10px"><b style="font-size:12px">RIGHT:</b><br>${chipsHtml('r')}</div>${seqBarHtml()}`}
 function renderSeqUI(){const el=$('#seqview');if(!el)return;el.innerHTML=seqViewHtml();if(SEQ_EDIT)seqEditTypeChange()}
@@ -1315,7 +1717,11 @@ function saveSeqEdit(){
  SEQ[SEQ_SEL.side][SEQ_SEL.i]=item;SEQ_EDIT=false;seqChanged();
 }
 function removeSeq(side,idx){SEQ[side].splice(idx,1);seqChanged()}
-function seqReset(){SEQ={l:[],r:[]};SEQ_SEL=null;SEQ_INS=null;SEQ_EDIT=false;renderSeqUI();refreshAuto('sketch')}
+function seqReset(){
+ const id=fv('f_id'),row=id?D.sketch.find(x=>x.id===id):null;
+ SEQ={l:[],r:[]};
+ if(row){try{SEQ={l:JSON.parse(row.seql||'[]'),r:JSON.parse(row.seqr||'[]')}}catch(e){}}
+ SEQ_SEL=null;SEQ_INS=null;SEQ_EDIT=false;renderSeqUI();refreshAuto('sketch')}
 function unplacedIntersections(segId){
  const placed=new Set([...SEQ.l,...SEQ.r].filter(it=>it.t==='__intersection__').map(it=>it.sid));
  return D.road.filter(r=>r.parent===segId&&!placed.has(r.id));
@@ -1728,6 +2134,180 @@ function illExport(svgEl){
  const c=svgEl.cloneNode(true);c.removeAttribute('style');
  if(!c.getAttribute('xmlns'))c.setAttribute('xmlns','http://www.w3.org/2000/svg');
  return '<?xml version="1.0" encoding="UTF-8"?>\n'+c.outerHTML;
+}
+
+/* ======================================================================
+   Downloads as JPEG / PDF (SVG files do not open on most phones)
+   ====================================================================== */
+async function illRaster(svgEl){
+ const vb=(svgEl.getAttribute('viewBox')||'').trim().split(/\s+/).map(Number);
+ const W=vb[2],H=vb[3];
+ if(!(W>0&&H>0))throw new Error('The drawing has no size');
+ const scale=Math.min(2,Math.sqrt(14e6/(W*H)),8000/Math.max(W,H));
+ const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(illExport(svgEl));
+ const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('the browser could not draw it'));i.src=url});
+ const c=document.createElement('canvas');c.width=Math.round(W*scale);c.height=Math.round(H*scale);
+ const g=c.getContext('2d');g.fillStyle='#ffffff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+ return c;
+}
+function canvasBlob(c,type,q){return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('could not create the image')),type,q))}
+// A one-page PDF holding the JPEG. The page keeps the drawing's own proportions
+// (A4 width) so nothing is cropped or shrunk onto a fixed paper size.
+function pdfFromJpeg(jpg,iw,ih){
+ const pw=ih>iw*0.8?595.28:841.89,m=18,dw=pw-2*m,dh=dw*ih/iw,ph=dh+2*m;
+ const enc=s=>{const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i)&255;return a};
+ const f=n=>n.toFixed(2);
+ const chunks=[],offs=[];let pos=0;
+ const push=b=>{chunks.push(b);pos+=b.length};
+ push(enc('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'));
+ const obj=(n,body)=>{offs[n]=pos;push(enc(n+' 0 obj\n'));if(typeof body==='string')push(enc(body));else body.forEach(p=>push(typeof p==='string'?enc(p):p));push(enc('\nendobj\n'))};
+ const content='q '+f(dw)+' 0 0 '+f(dh)+' '+f(m)+' '+f(m)+' cm /Im0 Do Q';
+ obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+ obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+ obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+f(pw)+' '+f(ph)+'] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+ obj(4,['<< /Type /XObject /Subtype /Image /Width '+iw+' /Height '+ih+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n',jpg,'\nendstream']);
+ obj(5,'<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream');
+ const xr=pos;let x='xref\n0 6\n0000000000 65535 f \n';
+ for(let n=1;n<=5;n++)x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
+ push(enc(x+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF\n'));
+ const out=new Uint8Array(pos);let p=0;chunks.forEach(c=>{out.set(c,p);p+=c.length});return out;
+}
+// pdfFromJpegA3: same as pdfFromJpeg but targets A3 landscape (420×297mm = 1190.55×841.89pt)
+function pdfFromJpegSized(jpg,iw,ih,a3){
+ const pw=a3?1190.55:841.89,ph=a3?841.89:595.28,m=18,dw=pw-2*m,dh=ph-2*m;
+ // fit image into page box preserving aspect ratio
+ let fw=dw,fh=dw*ih/iw;if(fh>dh){fh=dh;fw=dh*iw/ih}
+ const ox=m+(dw-fw)/2,oy=m+(dh-fh)/2;
+ const enc=s=>{const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i)&255;return a};
+ const f=n=>n.toFixed(2);
+ const chunks=[],offs=[];let pos=0;
+ const push=b=>{chunks.push(b);pos+=b.length};
+ push(enc('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'));
+ const obj=(n,body)=>{offs[n]=pos;push(enc(n+' 0 obj\n'));if(typeof body==='string')push(enc(body));else body.forEach(p=>push(typeof p==='string'?enc(p):p));push(enc('\nendobj\n'))};
+ const content='q '+f(fw)+' 0 0 '+f(fh)+' '+f(ox)+' '+f(oy)+' cm /Im0 Do Q';
+ obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+ obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+ obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+f(pw)+' '+f(ph)+'] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+ obj(4,['<< /Type /XObject /Subtype /Image /Width '+iw+' /Height '+ih+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n',jpg,'\nendstream']);
+ obj(5,'<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream');
+ const xr=pos;let x='xref\n0 6\n0000000000 65535 f \n';
+ for(let n=1;n<=5;n++)x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
+ push(enc(x+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF\n'));
+ const out=new Uint8Array(pos);let p=0;chunks.forEach(c=>{out.set(c,p);p+=c.length});return out;
+}
+async function downloadIllusWithSize(svg,name,btn){
+ // Show inline A4/A3 prompt then download
+ const row=btn.closest('.row')||btn.parentNode;
+ if(row.querySelector('.size-prompt'))return; // already showing
+ const prompt=document.createElement('span');
+ prompt.className='size-prompt';
+ prompt.style.cssText='display:inline-flex;gap:6px;align-items:center;font-size:13px';
+ prompt.innerHTML='Size: <button class="btn sm" data-sz="a4">A4 portrait</button><button class="btn sm" data-sz="a3">A3 landscape</button><button class="btn g sm" onclick="this.parentNode.remove()">✕</button>';
+ row.appendChild(prompt);
+ prompt.querySelectorAll('[data-sz]').forEach(b=>{
+  b.onclick=async()=>{
+   const a3=b.dataset.sz==='a3';
+   prompt.remove();
+   await withSpinner(btn,'Preparing...',async()=>{
+    try{
+     const c=await illRaster(svg);
+     const jb=await canvasBlob(c,'image/jpeg',0.92);
+     const bytes=new Uint8Array(await jb.arrayBuffer());
+     dl(name+'.pdf',new Blob([pdfFromJpegSized(bytes,c.width,c.height,a3)],{type:'application/pdf'}));
+     toast('PDF saved — '+(a3?'A3 landscape':'A4 portrait'));
+    }catch(e){toast('Could not create the file: '+(e.message||e))}
+   });
+  };
+ });
+}
+async function downloadIllus(kind,sel,name,btn){
+ const svg=$(sel+' svg');
+ if(!svg){toast('Build the illustration first, then download it');return}
+ if(kind==='jpg'){
+  await withSpinner(btn,'Preparing...',async()=>{
+   try{const c=await illRaster(svg);const jb=await canvasBlob(c,'image/jpeg',0.92);dl(name+'.jpg',jb);toast('JPEG saved to your downloads')}
+   catch(e){toast('Could not create the file: '+(e.message||e))}
+  });
+ }else{
+  downloadIllusWithSize(svg,name,btn);
+ }
+}
+function downloadIllustration(kind,btn){const id=$('#f_id')?$('#f_id').value:'segment';downloadIllus(kind||'pdf','#illuswrap','DAPO100_'+id+'_illustration',btn)}
+function downloadColonyMap(kind,btn){downloadIllus(kind||'pdf','#colonymapwrap','DAPO100_'+(REPORT_SEG||'colony')+'_map',btn)}
+
+/* ======================================================================
+   Number checks: nothing measured can be negative; coordinates must be real
+   ====================================================================== */
+const COORD_KEYS=new Set(['slat','slng','elat','elng']);
+function coordError(lat,lng){
+ const a=lat===''||lat==null?null:Number(lat),b=lng===''||lng==null?null:Number(lng);
+ if((a!==null&&isNaN(a))||(b!==null&&isNaN(b)))return 'Latitude and longitude must be numbers';
+ if(a!==null&&Math.abs(a)>90)return 'Latitude must be between -90 and 90';
+ if(b!==null&&Math.abs(b)>180)return 'Longitude must be between -180 and 180';
+ return '';
+}
+function validateRow(k,r){
+ for(const c of SH[k].c){
+  if(c.t!=='n')continue;
+  const v=r[c.k];if(v===''||v==null)continue;
+  const x=Number(v);
+  if(!isFinite(x))return c.l+' must be a number';
+  if(COORD_KEYS.has(c.k)){const lim=/lat$/.test(c.k)?90:180;if(Math.abs(x)>lim)return c.l+' is outside the valid range'}
+  else if(x<0)return c.l+' cannot be negative';
+ }
+ return '';
+}
+
+/* ======================================================================
+   Data checks: two-level picker (road, then segment)
+   ====================================================================== */
+let CHK_FAM='',CHK_SEG='';
+function chkLead(c){return String(c).split(':')[0].trim()}
+function chkFamOf(id){const m=String(id).match(/^DPO-R\d+/);return m?m[0]:id}
+function chkPickerHtml(){
+ const roots=familyRoots();
+ return `<div class="grid" style="margin-bottom:8px">
+  <label>Road<select id="chk_fam" onchange="chkFamChange(this.value)"><option value="">All roads</option>${roots.map(r=>`<option value="${esc(r.id)}" ${r.id===CHK_FAM?'selected':''}>${esc(r.id)}${r.road?' - '+esc(r.road):''}</option>`).join('')}</select></label>
+  <label>Segment<select id="chk_seg" onchange="chkSegChange(this.value)"><option value="">${CHK_FAM?'This road and all its branches':'All segments'}</option>${CHK_FAM?segFamilyOptions(CHK_FAM,CHK_SEG):''}</select></label></div>`;
+}
+function chkFilter(chk){
+ if(CHK_SEG)return chk.filter(c=>chkLead(c)===CHK_SEG);
+ if(CHK_FAM)return chk.filter(c=>chkFamOf(chkLead(c))===CHK_FAM);
+ return chk;
+}
+function chkListHtml(chk,hasRoads){
+ const list=chkFilter(chk),filtered=!!(CHK_FAM||CHK_SEG);
+ if(!list.length)return '<div class="ok">OK - No issues found'+(filtered?' for this selection':(hasRoads?'':' (no data yet)'))+'</div>';
+ const shown=list.slice(0,40);
+ return `<p class="hint">Showing ${shown.length} of ${list.length} issue(s)${filtered?' for this selection':''}</p>`+shown.map(c=>`<div class="warn">! ${c}</div>`).join('')+(list.length>40?`<p class="hint">${list.length-40} more - pick a road or segment above to narrow this down.</p>`:'');
+}
+function chkFamChange(v){CHK_FAM=v;CHK_SEG='';render()}
+function chkSegChange(v){CHK_SEG=v;render()}
+
+/* ======================================================================
+   Picking a segment that already has an FS3/FS4/FS5 row opens that row,
+   so saving never silently replaces what was already entered
+   ====================================================================== */
+let FORCE_LOAD=false;
+function autoLoadExisting(k){
+ if(!['drain','coll','sketch'].includes(k)||edit>=0)return false;
+ const id=fv('f_id');if(!id)return false;
+ const i=D[k].findIndex(x=>x.id===id);if(i<0)return false;
+ const typed=SH[k].c.some(c=>{if(c.t==='auto'||c.t==='hid'||c.k==='id')return false;const e=$('#f_'+c.k);return !!(e&&String(e.value).trim())});
+ if(typed)return false;
+ ed(k,i);toast('This segment already has an entry - it is open below. Change it and press Update row.');
+ return true;
+}
+
+function delMessage(k,i){
+ const row=D[k][i];
+ if(k!=='road'||!row)return 'Delete this row?';
+ const kids=D.road.filter(r=>r.parent===row.id).length;
+ const have=[['FS2',D.prem],['FS3',D.drain],['FS4',D.coll],['FS5',D.sketch]].filter(([n,a])=>a.some(x=>x.id===row.id)).map(x=>x[0]);
+ let m='Delete road '+row.id+'?';
+ if(kids)m+='\n\nIt has '+kids+' branch road(s). They will NOT be deleted and will be flagged in Data checks.';
+ if(have.length)m+='\n\nIts '+have.join(', ')+' entries will NOT be deleted either.';
+ return m+'\n\nIts letters are never reused.';
 }
 
 /* ---------- boot ---------- */
